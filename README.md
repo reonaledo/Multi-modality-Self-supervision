@@ -1,7 +1,71 @@
+
 # Multi-modality Self-supervision
 1st KAIST project.
 Let's get started!
 
+
+#### • Target Class.   
+* Atelectasis  
+* Cardiomegaly  
+* Consolidation
+* Edema
+* Enlarged Cardiomediastinum
+* Fracture
+* Lung Lesion
+* Lung Opacity
+* No finding
+* Pleural Effusion
+* Effusion          
+* Pneumonia    
+* Pneumothorax 
+* Support Devices
+
+#### • Directory Structure.
+
+> *  KAIST Multi-modality self-supervision <jpg version>
+        ⎿ Dataset (xxx)                
+            ├ subject_id 001         
+            │   ⎿ study_id                   
+            │       ├ 00000001_000.jpg           
+            │       ⎿ 00001335_006.jpg (1~3개)           
+            │
+            │   ⎿ study_id 
+            │       ⎿ 00001335_006.jpg  
+            │
+            ├ subject_id 002       
+            │   ⎿ study_id                   
+            │       ├ 00001336_000.jpg                 
+            │       ⎿ 00003923_013.jpg                      
+            │                                       
+            ├ mimic_cxr_chexpert.csv (Label info)
+            ├ mimic_cxr_nebio.csv (Label info)
+            ├ mimic_cxr_metadata.csv (View info, subject id, anonymous dicom id, etc ..)
+            ⎿ mimic_cxr_split.csv (Train, Valid, Test set)
+
+
+> *  KAIST Multi-modality self-supervision <dicom version>
+        ⎿ Dataset (xxx)                
+            ├ subject_id 001         
+            │   ⎿ study_id 01                 
+            │       ├ 00000001_000.dcm           
+            │       ⎿ 00001335_006.dcm (1~3개)           
+            │   ⎿ study_id 01.txt
+            │   
+            │   ⎿ study_id 02
+            │       ⎿ 00001335_006.dcm  
+            │   ⎿ study_id 02.txt
+            │   
+            │
+            ├ subject_id 002       
+            │   ⎿ study_id 01                
+            │       ├ 00001336_000.dcm                 
+            │       ⎿ 00003923_013.dcm                      
+            │   ⎿ study_id 01.txt
+            │   
+            ├ cxr-record-list.csv (subject id, study id, dicom id, path)
+            ├ cxr-study-list.csv (subject id, study id, text path)
+            ⎿ cxr-reports folder (only contain txt files)
+ 
 ## Dataset pre-processing
 
 #### 1> TieNet: Text-Image Embedding Network for Common Thorax Disease Classification and Reporting in Chest X-rays
