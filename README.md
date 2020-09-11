@@ -66,7 +66,7 @@ Let's get started!
             ├ cxr-study-list.csv (subject id, study id, text path)
             ⎿ cxr-reports folder (only contain txt files)
  
-## Dataset pre-processing
+## Related work (Dataset pre-processing)
 
 #### 1> TieNet: Text-Image Embedding Network for Common Thorax Disease Classification and Reporting in Chest X-rays
 
@@ -83,18 +83,18 @@ MIMIC-CXR is the largest radiology dataset to date and consists of 473, 057 ches
 
 
 
-#### Our Approach.
+# Our Approach.
 
-1. our baseline model architecture is Unified VLP for Natural Language Genration and Natural Language Understanding tasks.
+our baseline model architecture is Unified VLP for Natural Language Genration and Natural Language Understanding tasks.
 BERT based image-text model can help joint embedding of img-txt information and can generate captions autoregressively through a modified converter encoder structure.
 Our strategy for single modality is that train the model utilizing BYOL method to get image feature (randomly pick 100 img feature fibers), and also train the model utilizing BlueBERT method to make the txt only model.
 After train each model, we make the Unified VLP based model to jointly train image and text features for the multi-modality model.
 
-2. Pre-train tasks
+1. Pre-train tasks
 - CLOZE tasks (Masked Seq-to-Seq masking n-gram using multi mask)
 - Image-txt matching using <CLS> token.
 
-3. Downstream task
+2. Downstream task
 - Classification: image, txt, img-txt, img-generated txt (optional)
 - NLU : Caption based Image Retrieval (Recall@1, Recall@5, Recall@10), Text Retrieval optional.
 - NLG : Image captioning. -> To evaluate the clinical accuracy of the generated report, we apply the labeler method (CheXpert).
