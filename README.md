@@ -90,3 +90,11 @@ BERT based image-text model can help joint embedding of img-txt information and 
 Our strategy for single modality is that train the model utilizing BYOL method to get image feature (randomly pick 100 img feature fibers), and also train the model utilizing BlueBERT method to make the txt only model.
 After train each model, we make the Unified VLP based model to jointly train image and text features for the multi-modality model.
 
+2. Pre-train tasks
+- CLOZE tasks (Masked Seq-to-Seq masking n-gram using multi mask)
+- Image-txt matching using <CLS> token.
+
+3. Downstream task
+- Classification: image, txt, img-txt, img-generated txt (optional)
+- NLU : Caption based Image Retrieval (Recall@1, Recall@5, Recall@10), Text Retrieval optional.
+- NLG : Image captioning. -> We use the labeler method (CheXpert) to evaluate the clinical accuracy of the generated report.
