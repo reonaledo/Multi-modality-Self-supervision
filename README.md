@@ -98,3 +98,5 @@ After train each model, we make the Unified VLP based model to jointly train ima
 - Classification: image, txt, img-txt, img-generated txt (optional)
 - NLU : Caption based Image Retrieval (Recall@1, Recall@5, Recall@10), Text Retrieval optional.
 - NLG : Image captioning. -> To evaluate the clinical accuracy of the generated report, we apply the labeler method (CheXpert).
+
+
