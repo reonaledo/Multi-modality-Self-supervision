@@ -80,3 +80,13 @@ All experiments in this work used the MIMIC-CXR dataset. MIMIC-CXR consists of 4
 #### 3> Clinically Accurate Chest X-Ray Report Generation
 
 MIMIC-CXR is the largest radiology dataset to date and consists of 473, 057 chest X-ray images and 206,563 reports from 63,478 patients. Among these images, 240,780 are of anteroposterior (AP), 101, 379 are of posteroanterior (PA), and 116, 023 are of lateral (LL) views. Furthermore, we eliminate duplicated radiograph images with adjusted brightness level or contrast as they are commonly produced for clinical needs, after which we are left with 327,281 images and 141,783 reports. The radiological reports are parsed into sections, among which we extract the findings section. We then apply tokenization and keep tokens with at least 5 occurrences in the corpus, resulting in 5, 571 tokens in total.
+
+
+
+#### Our Approach.
+
+1. our baseline model architecture is Unified VLP for Natural Language Genration and Natural Language Understanding tasks.
+BERT based image-text model can help joint embedding of img-txt information and can generate captions autoregressively through a modified converter encoder structure.
+Our strategy for single modality is that train the model utilizing BYOL method to get image feature (randomly pick 100 img feature fibers), and also train the model utilizing BlueBERT method to make the txt only model.
+After train each model, we make the Unified VLP based model to jointly train image and text features for the multi-modality model.
+
