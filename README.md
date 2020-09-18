@@ -100,3 +100,13 @@ After train each model, we make the Unified VLP based model to jointly train ima
 - NLG : Image captioning. -> To evaluate the clinical accuracy of the generated report, we apply the labeler method (CheXpert).
 
 
+
+
+## Code
+
+Now Byol is being trained on Kubernetes. The entire data of the MIMIC-CXR is still being downloaded, so we can run the model using subset data.
+Detailed script you can check those files(main.py, data.transformer, data.).
+
+how to run the model?
+1. Conda activate simclr 
+2. python main.py
