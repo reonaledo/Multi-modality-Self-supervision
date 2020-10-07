@@ -101,6 +101,37 @@ After train each model, we make the Unified VLP based model to jointly train ima
 
 
 
+# < Oct.7.2020 Today's meeting >
+오늘의 미팅 내용 정리.
+리포트 파싱
+Clinical bert. 좀더 살펴 볼 것.Wordpieace 는 적절해 보이지 않음.
+토큰 length 256면 적당해 보임.
+Impression + finding > finding > impression
+Finding 을 제일 우선시해서, 둘다 있을 경우는 긴것으로 하는게 좀더 description이 기니까 좋지 않나
+
+네트워크
+1. ROI 없이 이미지를 학습하는 모델 기반 (PixelBERT, 16x16 patch)으로 베이스라인으로 잡고 구현, Masked Object Modeling을 개선 할 수 있는 방법을 고민해보자. 
+2. Method. 
+1) MLM 1번 구조, ITM task는 fix. (가장 기본적인것만 confirmed)
+2) Input에 attention을 걸어 인풋 임베딩 하는 것은 좋지 않은 방법이다. -> Text-conditioned로 하는 것과 image-conditioned로 하는 방식은 뭔가 방향성이 있어 보이고, 좋은 방법같진 않다.
+3) Masked Object 모델링을 위해 Attention based로 인풋을 넣는 방법 말고, 2,3번 대신 LXMERT 방식처럼 각각 인풋 이미지에 노이즈를 섞는 방식을 고민해보자. 
+4) Edward : Out-of-domain 테스트를 해야하는 명분을 모르겠다 In domain 테스트로만 수행하면 안되는 것인가? -> JH : Multi-modality의 generality를 위함. -> Ed: 여전히 이유를 모르겠다 명분이 
+부족하다 다른 연구들에서 한다고 무조건 해야 할 건 아니다.
+out-of-domain을 하는 이유를 명확히 찾자. 
+
+object를 prediction 또는 generation을 하기 위해 16x16 grid patch를 randomly maksing한 뒤, regression 하거나 pixel value를 채워 원본 이미지와 비교하는 방식이 좋을 것 같고,
+cnn을 통한 feature extraion된 결과에 대해 수행하게 되면 입력까지 backward gradient를 하기 때문에, (자기 자신을 regression함으로서 collapse 될 위험이 있다? -> 명확하게 하기 위해 BYOL 을 살펴볼것). 따라서,
+image feature extraction을 위한 CNN layer는 결과적으로 freeze 한 뒤, feature extraction된 fiber로 부터 원본 이미지 pixel value를 채워가는 방식으로 가능은 하겠으나 intuitive 하지 않은 것 같다.
+cnn으로부터 visual feature를 extraction하게 되면, 
+
+
+* 최종, <A COMPARISON OF PRE-TRAINED VISION-AND-LANGUAGE MODELS FOR MULTIMODAL REPRESENTATION LEARNING ACROSS MEDICAL IMAGES AND REPORTS> 
+논문에서 각 모델별로 차이를 분석, 
+e.g., PIXELBERT가 왜 잘 안됐는지? 우수한 모델이 어떤 것 이었는지? 각 방법론의 장점들은 뭔지? 여러 모델의 장단점을 비교해서 고안하자. 방향은 각 모달리티 인풋을 각각 넣는 식이 좋을 것 같다.
+
+내가 내린 결론 
+->좋은 방법은 입력을 16x16 patch로 cnn layer없이 인풋을 grid로 짤라 쓰고, 이를 object masking된 영역을 regression을 하든, pixel value를 채우든 하는 방식으로 가는 것이 좋을 것 같다.
+
 
 ## Code
 
