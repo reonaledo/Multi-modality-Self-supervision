@@ -103,6 +103,7 @@ After train each model, we make the Unified VLP based model to jointly train ima
 
 # < Oct.7.2020 Today's meeting >
 오늘의 미팅 내용 정리.
+
 About : Report parsing
 Clinical BERT paper 좀 더 살펴 볼 것 -> . Wordpieace 는 적절해 보이지 않음.
 토큰 length 256면 적당해 보임.
