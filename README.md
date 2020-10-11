@@ -118,8 +118,8 @@ Finding을 제일 우선시해서, 둘다 있을 경우는 긴 것으로 하는�
 3) Masked Object 모델링을 위해 Attention based로 인풋을 넣는 방법 말고, 2,3번 대신 LXMERT 방식처럼 각각 인풋 이미지에 노이즈를 섞는 방식을 고민해보자. 
 4) Out-of-domain 테스트를 해야하는 명분을 모르겠다 In domain 테스트로만 수행하면 안되는 것인가? out-of-domain을 하는 이유를 명확히 찾자.
 
-object를 prediction 또는 generation을 하기 위해 16x16 grid patch를 randomly maksing한 뒤, regression 하거나 pixel value를 채워 원본 이미지와 비교하는 방식이 좋을 것 같고,
-cnn을 통한 feature extraion된 결과에 대해 수행하게 되면 입력까지 backward gradient를 하기 때문에, (자기 자신을 regression함으로서 collapse 될 위험이 있다? -> 명확하게 하기 위해 BYOL 을 살펴볼것). 따라서,
+object를 prediction 또는 generation을 하기 위해 16x16 grid patch를 randomly maksing한 뒤, pixel or fiber regression을 통해 pixel or fiber's value를 채워 원본 이미지와 비교하는 방식이 좋을 것 같고,
+cnn을 통한 feature extraion된 결과에 대해 수행하게 되면 입력까지 backward gradient를 하기 때문에, (자기 자신을 regression함으로서 collapse 될 위험이 있다? 따라서,
 image feature extraction을 위한 CNN layer는 결과적으로 freeze 한 뒤, feature extraction된 fiber로 부터 원본 이미지 pixel value를 채워가는 방식으로 가능은 하겠으나 intuitive 하지 않은 것 같다.
 cnn으로부터 visual feature를 extraction하게 되면, 
 
