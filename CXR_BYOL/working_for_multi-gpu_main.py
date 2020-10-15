@@ -1,0 +1,101 @@
+import os
+
+import torch
+import yaml
+from torchvision import datasets
+from data.multi_view_data_injector import MultiViewDataInjector
+from data.transforms import get_simclr_data_transforms
+from models.mlp_head import MLPHead
+from models.resnet_base_network import ResNet18
+from trainer import BYOLTrainer
+import numpy as np
+import torch.nn as nn
+
+print(torch.__version__)
+torch.manual_seed(0)
+
+mimic_image = "/home/ubuntu/image_preprocessing"
+
+print("\n")
+print("_____Length of mimic jpg files_____",(mimic_image))
+print("\n")
+# input("Stop again")
+
+torch.__version__
+np.random.seed(0)
+
+def main():
+    config = yaml.load(open("./config/config.yaml", "r"), Loader=yaml.FullLoader)
+
+    # GPU_NUM = config['network']['gpu_number'] # 원하는 GPU 번호 입력
+    # device = torch.device(f'cuda:{GPU_NUM}' if torch.cuda.is_available() else 'cpu')
+    # torch.cuda.set_device(device) # change allocation of current GPU
+
+
+    # print ('Current cuda device ', torch.cuda.current_device()) # check
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    # print(torch.cuda.get_device_name(device))
+    # print(f"Training with: {device}")
+
+    data_transform = get_simclr_data_transforms(**config['data_transforms'])
+    train_dataset = datasets.ImageFolder(root=mimic_image, transform=MultiViewDataInjector([data_transform, data_transform]))
+
+    print("train_dataset",train_dataset)
+
+    # online network
+    # online_network = ResNet18(**config['network']).to(device)
+    online_network = ResNet18(**config['network'])
+    predictor = MLPHead(in_channels=online_network.projetion.net[-1].out_features,
+                            **config['network']['projection_head'])
+    target_network = ResNet18(**config['network'])
+    ################################################################
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+        online_network = nn.DataParallel(online_network)
+        predictor = nn.DataParallel(predictor)
+        target_network = nn.DataParallel(target_network)
+
+        print ('Available devices ', torch.cuda.device_count())
+        print ('Current cuda device ', torch.cuda.current_device())
+    online_network.to(device)
+    ################################################################
+    
+    pretrained_folder = config['network']['fine_tune_from']
+
+    # load pre-trained model if defined
+    if pretrained_folder:
+        try:
+            checkpoints_folder = os.path.join('./runs', pretrained_folder, 'checkpoints')
+
+            # load pre-trained parameters
+            load_params = torch.load(os.path.join(os.path.join(checkpoints_folder, 'model.pth')),
+                                    map_location=torch.device(torch.device(device)))
+
+            online_network.load_state_dict(load_params['online_network_state_dict'])
+
+        except FileNotFoundError:
+            print("Pre-trained weights not found. Training from scratch.")
+
+    # predictor network
+    predictor.to(device)
+
+    # target encoder
+    target_network.to(device)
+
+    optimizer = torch.optim.SGD(list(online_network.parameters()) + list(predictor.parameters()),
+                                **config['optimizer']['params'])
+
+    trainer = BYOLTrainer(online_network=online_network,
+                        target_network=target_network,
+                        optimizer=optimizer,
+                        predictor=predictor,
+                        device=device,
+                        **config['trainer'])
+
+    trainer.train(train_dataset)
+
+
+if __name__ == '__main__':
+    main()
