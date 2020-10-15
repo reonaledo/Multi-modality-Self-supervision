@@ -373,7 +373,24 @@ def aumentation(cropped_image):
     return augmented_img
 
 
+# to_chk_the_files = glob('/home/ubuntu/image_preprocessing/Train/*.jpg'); print("train",len(to_chk_the_files))
+# fw = open('train_list.txt','w')
+# fw.write(str(to_chk_the_files))
+# input("chk")
 
+# to_chk_the_files2 = glob('/home/ubuntu/image_preprocessing/Valid/*.jpg'); print("valid",len(to_chk_the_files2))
+# fw2 = open('valid_list.txt','w')
+# fw2.write(str(to_chk_the_files2))
+# input("chk")
+
+# to_chk_the_files3 = glob('/home/ubuntu/image_preprocessing/Test/*.jpg'); print("test",len(to_chk_the_files3))
+# fw3 = open('test_list.txt','w')
+# fw3.write(str(to_chk_the_files3))
+# input("chk")
+
+# fw.close()
+# fw2.close()
+# fw3.close()
 # image_cut(img_list)
 # rescale(img_list)
 
@@ -406,5 +423,4 @@ rescaled_img_list, as_ratio = image_resize_with_interpolation(include_img, inclu
 # augmented_img_list = aumentation(cropped_image)
 
 # print(min_value)
-
 
