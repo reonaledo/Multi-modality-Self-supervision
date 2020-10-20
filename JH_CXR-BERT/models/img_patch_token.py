@@ -44,7 +44,7 @@ class Img_patch_embedding(nn.Module):
 
 if __name__ == "__main__":
 
-    img_path = glob("/home/ubuntu/byol_/CXR_BYOL/vit_github/examples/3ch/train/*.jpg")
+    img_path = glob("/home/ubuntu/byol_/CXR_BYOL/3ch/train/*.jpg")
 
     img = Image.open(img_path[1])
     img = ToTensor()(img).unsqueeze(0)
