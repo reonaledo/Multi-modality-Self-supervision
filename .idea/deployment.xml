@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="ubuntu@101.101.169.70:16022 password" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
       <paths name="edlab-hglee@143.248.159.67:50000 password">
         <serverdata>
@@ -9,6 +9,21 @@
           </mappings>
         </serverdata>
       </paths>
+      <paths name="ubuntu@101.101.169.70:16022">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="ubuntu@101.101.169.70:16022 password">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/ubuntu/HG/Multi-modality-Self-supervision" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
     </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
   </component>
 </project>
