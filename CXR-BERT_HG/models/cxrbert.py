@@ -25,7 +25,7 @@ class ImageBertEmbeddings(nn.Module):
 
         return embeddings
 
-class CXRBertEncoder(nn.Module):
+class CXRBertEncoder(nn.Module):  # MultimodalBertEncoder, BERT
     def __init__(self, args):
         super().__init__()
         self.args = args
@@ -77,7 +77,11 @@ class CXRBERT(nn.Module):  # BERTLM, MultimodalBertClf
         self.itm = ImageTextMatching(args.hidden_size)
 
     def forward(self, x, segment_label):  # TODO: Think x should be (txt+img) and followed segment_label
-        x = self.enc(x, segment_label)
+        x = self.enc(x, segment_label)  # TODO: Change Argument: input_txt, attn_mask, segment, input_img
+        return self.mlm(x), self.itm(x)
+
+    def forward(self, input_txt, attn_mask, segment, input_img):
+        x = self.enc(input_txt, attn_mask, segment, input_img)
         return self.mlm(x), self.itm(x)
 
 class MaskedLanguageModel(nn.Module):
@@ -110,4 +114,4 @@ class ImageTextMatching(nn.Module):
         self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, x):
-        return self.softmax(self.linear(x[:, 0]))
+        return self.softmax(self.linear(x[:, 0])) # [CLS] token

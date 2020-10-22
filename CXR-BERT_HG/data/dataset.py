@@ -60,7 +60,7 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         self.data_dir = os.path.dirname(data_path)
         self.tokenizer = tokenizer
         self.args = args
-        self.vocab = vocab
+        self.vocab = vocab  # not in used, cuz self.BerTokenizer.vocab, .ids_to_tokens ~~~
         # TODO: Check max_len (cuz, img + txt)
         self.max_seq_len = args.max_seq_len  # 512
         self.max_seq_len -= args.num_image_embeds # 512 - 100(#img_embeds)
@@ -113,12 +113,12 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         # TODO: to distinguish txt or img
         #segment_label = ([0 for _ in range(self.max_seq_len)] + [1 for _ in range(self.args.num_image_embeds)])
         # segment only for txt. cuz in cxrbert.py img_tok is segment for img
-        segment_label = [1 for _ in range(self.max_seq_len)]
+        segment = [1 for _ in range(self.max_seq_len)]
 
         input_ids = torch.tensor(input_ids)
         txt_labels = torch.tensor(txt_labels)
         attn_masks = torch.tensor(attn_masks)
-        segment_label = torch.tensor(segment_label)
+        segment = torch.tensor(segment)
 
         # TODO: Image input format, 1) whole and process at next step or 2) sample fiber at first.... 1)
         # TODO: Image to ToTensor()
@@ -130,7 +130,27 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         txt_itm, _, is_aligned = self.random_pair_sampling(idx)
         input_ids_ITM = self.BertTokenizer(txt_itm)['input_ids']
 
-        return input_ids, txt_labels, attn_masks, image, segment_label, is_aligned, input_ids_ITM
+        # through the collate_fn, mmbt return: txt, segment, mask, img, tgt = batch
+        """
+        Let max_seq = 8, num_img_embeds = 4
+        sequence = 'I ate an apple'
+        encoded_sequence = [CLS] I ate an apple [SEP] [PAD] [PAD]
+                            -> 100, 3, 7, 101, 45, 105 , 0, 0 
+        
+        through the random_word(), return input_ids, txt_labels
+        
+        input_ids : for MLM and also only for TXT not IMG(sample random features), 
+                    ex) 100, 3, 104[M], 101, 45, 105, 0, 0 //
+        txt_labels : only for MLM
+                    ex) -1, -1, 7, -1 -1 -1, -1(0), -1(0) // -1, -1, -1, -1
+        attn_masks : 1, 1, 1, 1, 1, 1, 0, 0 // 1, 1, 1, 1
+        image : full_img, _.jpg
+        segment : 0, 0, 0, 0, 0, 0, 0, 0 // ( 1, 1, 1, 1) -> implemented in cxrbert.py img_tok, need to check
+        is_aligned : Aligned(1) / Not aligned(0)
+        input_ids_ITM : 100, 3, 7, 101, 45, 105, 0, 0 -> not masked, just encoded_sequence
+        """
+        return input_ids, txt_labels, attn_masks, image, segment, is_aligned, input_ids_ITM
+
 
     def random_pair_sampling(self, idx):
         _, txt, img = self.data[idx].keys()
