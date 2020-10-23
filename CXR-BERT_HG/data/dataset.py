@@ -9,8 +9,6 @@ from PIL import Image
 
 import torch
 from torch.utils.data import Dataset
-
-
 from transformers import BertModel, BertTokenizer
 
 def random_word(tokens, vocab_range, mask):
@@ -45,6 +43,7 @@ def random_word(tokens, vocab_range, mask):
             output_label.append(token)
         else:
             # no masking token(will be ignored by loss function later)
+            #output_label.append(0)
             output_label.append(-1)
 
     if all(o == -1 for o in output_label):
@@ -53,6 +52,7 @@ def random_word(tokens, vocab_range, mask):
         tokens[0] = mask
 
     return tokens, output_label
+
 
 class CXRDataset(Dataset):  # for both MLM and ITM
     def __init__(self, data_path, tokenizer, transforms, vocab, args):
@@ -91,12 +91,14 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         encoded_sentence = [self.vocab_stoi[w] if w in self.vocab_stoi else self.vocab_stoi["[UNK]"]  # [178, 8756, 1126, 12075]
                             for w in tokenized_sentence]
 
-        input_ids, txt_labels = random_word(encoded_sentence, self.vocab_len, self.vocab_stoi["[MASK]"])
+        #input_ids, txt_labels = random_word(encoded_sentence, self.vocab_len, self.vocab_stoi["[MASK]"])
+
+        input_ids, txt_labels = self.random_word(encoded_sentence)
 
         input_ids = [self.vocab_stoi["[CLS]"]] + input_ids + [self.vocab_stoi["[SEP]"]]
-        txt_labels_t = [-1] + txt_labels + [-1]  # [CLS], txt, [SEP]
+        txt_labels_t = [0] + txt_labels + [0]  # [CLS], txt, [SEP]
 
-        txt_labels_p_i = [-1] * (self.max_seq_len - len(input_ids) + self.args.num_image_embeds) # [PAD]s, IMGs
+        txt_labels_p_i = [0] * (self.max_seq_len - len(input_ids) + self.args.num_image_embeds) # [PAD]s, IMGs
 
 
         # TODO(Done): Attention_mask(to distinguish padded or not), also applied to special tokens
@@ -121,7 +123,7 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         attn_masks = torch.tensor(attn_masks)
         segment = torch.tensor(segment)
 
-        image = Image.open(os.path.join(self.data_dir, self.data[idx]['img']))
+        image = Image.open(os.path.join(self.data_dir, self.data[idx]['img']))  #.convert("RGB")
         image = self.transforms(image)
 
         # ITM
@@ -161,8 +163,40 @@ class CXRDataset(Dataset):  # for both MLM and ITM
 
         return input_ids, txt_labels, attn_masks, image, segment, is_aligned, input_ids_ITM
 
+    def random_word(self, tokens):
+        output_label = []
+
+        for i, token in enumerate(tokens):
+            prob = random.random()
+            if prob < 0.15:
+                prob /= 0.15
+
+                # 80% randomly change token to mask token
+                if prob < 0.8:
+                    tokens[i] = self.vocab_stoi["[MASK]"]
+
+                # 10% randomly change token to random token
+                elif prob < 0.9:
+                    tokens[i] = random.randrange(self.vocab_len)
+
+                # 10% randomly change token to current token
+                else:
+                    tokens[i] = token
+                output_label.append(token)
+
+            else:
+                tokens[i] = token
+                output_label.append(0)
+
+        if all(o == 0 for o in output_label):
+            # at least mask 1
+            output_label[0] = tokens[0]
+            tokens[0] = self.vocab_stoi["[MASK]"]
+
+        return tokens, output_label
 
     def random_pair_sampling(self, idx):
+        #_, txt, img = self.data[idx].keys()
         _, _, txt, img = self.data[idx].keys()
 
         d_txt = self.data[idx][txt]
@@ -177,42 +211,3 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         rand_num = random.randint(0, len(self.data) - 1)
         txt = self.data[rand_num]['text']
         return txt
-
-# class ITMDataset(Dataset):
-#     def __init__(self, data_path, tokenizer, transforms, vocab, args):
-#         self.data = [json.loads(l) for l in open(data_path)]
-#         self.data_dir = os.path.dirname(data_path)
-#         self.tokenizer = tokenizer
-#         self.args = args
-#         self.vocab = vocab
-#         # TODO: Check max_len (cuz, img + txt)
-#         self.max_seq_len = args.max_seq_len
-#         self.max_seq_len -= args.num_image_embeds
-#         self.transforms = transforms
-#
-#         """
-#         tokenizer = BertTokenizer.from_pretrained('bert-based-uncased').tokenize
-#         vocab_stoi = tokenizer.vocab
-#         vocab_itos = tokenizer.ids_to_tokens
-#         vocab_len = len(vocab_itos)
-#         """
-#         self.tokenizer = tokenizer  # tokenizer = BertTokenizer.from_pretrained('bert-based-uncased').tokenize
-#         # TODO: stoi, itos tokenizer need to change
-#         self.vocab_stoi = self.tokenizer.vocab  # tokenizer = BertTokenizer.from_pretrained('bert-based-uncased')
-#         self.vocab_itos = self.tokenizer.ids_to_tokens
-#         self.vocab_len = len(self.vocab_itos)
-#
-#     def __len__(self):
-#         return len(self.data)
-#
-#     def __getitem__(self, idx):
-#         # TODO: randomly generate negative samples (Aligned / Not aligned)
-#         text = None
-#         img_feat = None
-#         label = None  # (Aligned or Not aligned)
-#
-#         # TODO: Image input format, whole and process at next step or sampled fiber at first(duplicated.)
-#         image = Image.open(os.path.join(self.data_dir, self.data[idx]['image]']))
-#         image = self.transforms(image)
-#
-#         return text, image, label

@@ -4,7 +4,7 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/CXR-BERT_HG" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="Remote Python 3.6.5 (sftp://ubuntu@101.101.169.70:16022/home/ubuntu/anaconda3/envs/pytorch_p36/bin/python3)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="NIPPA" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PyDocumentationSettings">

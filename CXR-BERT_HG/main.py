@@ -64,9 +64,19 @@ if __name__ == '__main__':
     # TODO: train_dataset & test_dataset seems similar with '--data_path'
     parser.add_argument("--train_dataset", type=str, default='/home/ubuntu/simclr_/Multi-modality-Self-supervision/Train.jsonl', help="train dataset for training")
     parser.add_argument("--test_dataset", type=str, default='/home/ubuntu/simclr_/Multi-modality-Self-supervision/Test.jsonl', help='test dataset for evaluate train set')
+
+    # parser.add_argument("--train_dataset", type=str,
+    #                     default='/home/edlab-hglee/cxr-bert/dset/cxr_train.json',
+    #                     help="train dataset for training")
+    # parser.add_argument("--test_dataset", type=str,
+    #                     default='/home/edlab-hglee/cxr-bert/dset/cxr_test.json',
+    #                     help="test dataset for training")
+
     # TODO: check
-    #parser.add_argument("--vocab_path", required=True, type=str, help="build vocab model path with bert-vocab")
+    #parser.add_argument("--vocab_path", required=True, type=str, help="build vocab model path with bert-vocab") # not in used
     parser.add_argument("--output_path", type=str, default='output/CXRBert_trained.model', help="ex)output/bert.model")
+
+    #parser.add_argument("--output_path", type=str, default='/home/edlab-hglee/cxr-bert/output/CXRBert_trained.model', help="ex)output/bert.model")
 
     # TODO: bert-base, parameter, check
     # parser.add_argument("--hidden", type=int, default=256, help="hidden size of transformer model")
@@ -76,7 +86,8 @@ if __name__ == '__main__':
 
     parser.add_argument("--batch_size", type=int, default=8, help="number of batch size")
     parser.add_argument("--epochs", type=int, default=10, help='number of epochs')
-    parser.add_argument("--num_workers", type=int, default=5, help="dataloader worker size")
+    parser.add_argument("--num_workers", type=int, default=2, help="dataloader worker size")
+
 
     parser.add_argument("--with_cuda", type=bool, default=True, help="training with CUDA: True or False")
     parser.add_argument("--log_freq", type=int, default=10, help="printing loss every n inter: setting n")

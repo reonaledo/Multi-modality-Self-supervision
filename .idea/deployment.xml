@@ -5,7 +5,28 @@
       <paths name="edlab-hglee@143.248.159.67:50000 password">
         <serverdata>
           <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/mnt/edlab-hglee/cxr-bert" local="$PROJECT_DIR$/CXR-BERT_HG" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="edlab-hglee@143.248.159.67:50000 password (1)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/mnt/edlab-hglee/cxr-bert" local="$PROJECT_DIR$/CXR-BERT_HG" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="edlab-hglee@143.248.159.67:50000 password (2)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/mnt/edlab-hglee/cxr-bert" local="$PROJECT_DIR$/CXR-BERT_HG" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="edlab-hglee@143.248.159.67:50000 password (3)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/mnt/edlab-hglee/cxr-bert" local="$PROJECT_DIR$/CXR-BERT_HG" />
           </mappings>
         </serverdata>
       </paths>
@@ -17,6 +38,48 @@
         </serverdata>
       </paths>
       <paths name="ubuntu@101.101.169.70:16022 password">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/ubuntu/HG/Multi-modality-Self-supervision" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="ubuntu@101.101.169.70:16022 password (1)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/ubuntu/HG/Multi-modality-Self-supervision" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="ubuntu@101.101.169.70:16022 password (2)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/ubuntu/HG/Multi-modality-Self-supervision" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="ubuntu@101.101.169.70:16022 password (3)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/ubuntu/HG/Multi-modality-Self-supervision" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="ubuntu@101.101.169.70:16022 password (4)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/ubuntu/HG/Multi-modality-Self-supervision" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="ubuntu@101.101.169.70:16022 password (5)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/ubuntu/HG/Multi-modality-Self-supervision" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="ubuntu@101.101.169.70:16022 password (6)">
         <serverdata>
           <mappings>
             <mapping deploy="/home/ubuntu/HG/Multi-modality-Self-supervision" local="$PROJECT_DIR$" />

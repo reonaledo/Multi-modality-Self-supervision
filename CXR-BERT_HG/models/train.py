@@ -9,12 +9,13 @@ import torch.nn as nn
 from torch.nn import functional as F
 from torch.optim import Adam, AdamW, SGD
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 from models.cxrbert import CXRBERT, CXRBertEncoder
 from models.optim_schedule import ScheduledOptim
 
 
-
+summary = SummaryWriter('./runs/test')
 class CXRBERT_Trainer():
     """
     Pretrained CXRBert model with two pretraining tasks
@@ -36,7 +37,7 @@ class CXRBERT_Trainer():
         :param cuda_devices
         :param log_freq: logginf frequency of the batch iteration
         """
-
+        self.lr = lr
         # Setup cuda device for BERT training
         cuda_condition = torch.cuda.is_available() and with_cuda
         self.device = torch.device("cuda:0" if cuda_condition else "cpu")
@@ -99,7 +100,7 @@ class CXRBERT_Trainer():
 
             # 0. batch_data will be sent into the device(GPU or CPU)
             input_ids, txt_labels, attn_masks, img, segment, is_aligned, input_ids_ITM = data
-            print('--------------------------------------------')
+            #print('--------------------------------------------')
 
             input_ids = input_ids.to(self.device)
             txt_labels = txt_labels.to(self.device)
@@ -108,29 +109,43 @@ class CXRBERT_Trainer():
             segment = segment.to(self.device)
             is_aligned = is_aligned.to(self.device)
             input_ids_ITM = input_ids_ITM.to(self.device)
-
-            print('00000000000000000000000000000000000000000')
+            #print('00000000000000000000000000000000000000000')
             # 1. forward the MLM and ITM
             mlm_output, _ = self.model(input_ids, attn_masks, segment, img)  # forward(self, input_txt, attn_mask, segment, input_img)
+            # print('mlm_output_size:', mlm_output.size())
+            # print('txt_labels:', txt_labels.size())
+
+            # mlml_output_size: torch.Size([8, 512, 30522])
+            # txt_labels: torch.Size([8, 512])
+
             _, itm_output = self.model(input_ids_ITM, attn_masks, segment, img)  # forward(self, input_txt, attn_mask, segment, input_img):
 
-            print('1111111111111111111111111111111111111111111')
+            #print('1111111111111111111111111111111111111111111')
             # 2-1. NLL loss of predicting masked token word
             # TODO: mlm_output.transpose(1, 2) !!
             # mlm_output: torch.Size([16, 512, 30522])
             # transpose: torch.Size([16, 30522, 512])
             # txt_labels: torch.Size([16, 512]) -> target?
             mlm_loss = self.criterion(mlm_output.transpose(1, 2), txt_labels)
-            print('22222222222222222222222222222222222')
+            #print('mlm_loss:', mlm_loss)
 
             # 2-2. NLL loss of is_aligned classification result
             # itm_output: torch.Size([16,2])
             # is_aligned: torch.Size([16]), tensor([0, 1, 0, 0, 0, 0, 0, 1], device='cuda:0')
             itm_loss = self.criterion(itm_output, is_aligned)
-            print('33333333333333333333333333333333333333333')
+
+            #print('itm_loss:', itm_loss)
+            #print('33333333333333333333333333333333333333333')
 
             # 2-3. Summing mlm_loss and itm_loss
             loss = mlm_loss + itm_loss
+
+            # print('*********')
+            # print('loss:', loss)
+            # print('loss.item', loss.item())
+            # print('*********')
+
+            #print('4444444444444444444444')
 
             # 3. backward and optimization only in train
             if train:
@@ -152,7 +167,16 @@ class CXRBERT_Trainer():
                 "loss": loss.item()
             }
 
-            if i % self.log_freq == 0: data_iter.write(str(post_fix))
+            if i % self.log_freq == 0:
+                data_iter.write(str(post_fix))
+
+                summary.add_scalar('avg/avg_loss', avg_loss/ (i+1), i)
+                summary.add_scalar('avg/avg_acc', total_correct / total_element * 100, i)
+                summary.add_scalar('loss/mlm_loss', mlm_loss.item(), i)
+                summary.add_scalar('loss/itm_loss', itm_loss.item(), i)
+                summary.add_scalar('loss/loss', loss.item(), i)
+                summary.add_scalar('learning_rate', self.lr, i)
+
 
         print(f'EP{epoch}_{str_code}, '
               f'avg_loss = {avg_loss / len(data_iter)}, '
@@ -169,3 +193,4 @@ class CXRBERT_Trainer():
         torch.save(self.bert, output_path)
         print(f'EP: {epoch} Model saved on {output_path}')
         return output_path
+
