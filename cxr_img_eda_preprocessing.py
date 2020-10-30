@@ -149,7 +149,7 @@ def image_cut(img_list):
 
 def rescale(img_list):
     for itr, impath in enumerate (img_list):
-        size = 256, 256
+        size = 512, 512
         im = Image.open(impath)
         print(im.size)
         im.thumbnail(size, Image.ANTIALIAS)
@@ -158,7 +158,7 @@ def rescale(img_list):
 
 def image_cut_and_rescale(img_list):
 
-    size = 256, 256
+    size = 512, 512
 #     array_list = []
     include_img = []
     include_ap_ratio = []
@@ -295,7 +295,7 @@ def image_resize_with_interpolation(img_list, include_ap_ratio, mode = None):
     if not os.path.exists(modified_img_save_path):
         os.makedirs(modified_img_save_path, mode=0o777)
 
-    size = 256, 256
+    size = 512, 512
     interpolated_image_list = []
 #     array_list = []
     as_ratio = []
@@ -305,7 +305,9 @@ def image_resize_with_interpolation(img_list, include_ap_ratio, mode = None):
         im2arr2 = np.array(img[0])
         study_id = str(img[1])
         interpolated_image = np.array(cv2.resize(im2arr2, size, interpolation=cv2.INTER_NEAREST))
-        interpolated_image_list.append(interpolated_image)
+        duplicated_train_array = np.repeat(interpolated_image[:, :, :, np.newaxis], 3, -1)
+
+        interpolated_image_list.append(duplicated_train_array)
         as_ratio.append(include_ap_ratio[itr])
         arr2im = Image.fromarray(interpolated_image)   
         
@@ -317,7 +319,6 @@ def image_resize_with_interpolation(img_list, include_ap_ratio, mode = None):
             count = 0
 
         arr2im.save(modified_img_save_path + '/'+study_id+".jpg", dpi=(300, 300))
-
 
     return interpolated_image_list, as_ratio
 
@@ -406,17 +407,17 @@ value_of = [(0, 0), (0, 32), (32, 0), (16, 16), (32, 32)]
 
 include_ap_ratio, include_img, exclude_ap_ratio, exclude_img = image_cut_and_rescale(train_img_list)
 aspect_ratio_histogram(include_ap_ratio, exclude_ap_ratio)
-rescaled_img_list, as_ratio = image_resize_with_interpolation(include_img, include_ap_ratio, mode ='Train')
+rescaled_img_list, as_ratio = image_resize_with_interpolation(include_img, include_ap_ratio, mode ='512_3ch/Train')
 
 
 include_ap_ratio, include_img, exclude_ap_ratio, exclude_img = image_cut_and_rescale(valid_img_list)
 aspect_ratio_histogram(include_ap_ratio, exclude_ap_ratio)
-rescaled_img_list, as_ratio = image_resize_with_interpolation(include_img, include_ap_ratio, mode ='Valid')
+rescaled_img_list, as_ratio = image_resize_with_interpolation(include_img, include_ap_ratio, mode ='512_3ch/Valid')
 
 
 include_ap_ratio, include_img, exclude_ap_ratio, exclude_img = image_cut_and_rescale(test_img_list)
 aspect_ratio_histogram(include_ap_ratio, exclude_ap_ratio)
-rescaled_img_list, as_ratio = image_resize_with_interpolation(include_img, include_ap_ratio, mode ='Test')
+rescaled_img_list, as_ratio = image_resize_with_interpolation(include_img, include_ap_ratio, mode ='512_3ch/Test')
 
 # cropped_image, crop_img_size = random_crop(rescaled_img_list, 224, 224)
 
