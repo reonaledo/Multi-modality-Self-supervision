@@ -1,3 +1,0 @@
-"""
-ITM dataset
-"""

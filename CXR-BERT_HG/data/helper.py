@@ -25,7 +25,7 @@ def get_transforms():
     return transforms.Compose(
         [
             transforms.ColorJitter(brightness=(0.8, 1.2), contrast=(0.8, 1.2)),
-            transforms.Resize(224),
+            # transforms.Resize(224),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
 

@@ -45,25 +45,33 @@ from glob import glob
 from collections import OrderedDict
 
 file_data = OrderedDict()
-train_txt_path = glob('/home/edlab-hglee/Dataset/MIMIC-CXR/txt/Train/*.txt')
-valid_txt_path = glob('/home/edlab-hglee/Dataset/MIMIC-CXR/txt/Valid/*.txt')
-test_txt_path = glob('/home/edlab-hglee/Dataset/MIMIC-CXR/txt/Test/*.txt')
+train_txt_path = glob('/home/ubuntu/HG/r_mimic-cxr/txt/split/Train/*.txt')
+valid_txt_path = glob('/home/ubuntu/HG/r_mimic-cxr/txt/split/Valid/*.txt')
+test_txt_path = glob('/home/ubuntu/HG/r_mimic-cxr/txt/split/Test/*.txt')
 
 
 # '/home/ubuntu/image_preprocessing/'+str(impath.split('/')[-2])+ str(im.size)+".jpg")
-print("length of train_txt_path",len(train_txt_path))
-print("length of valid_txt_path",len(valid_txt_path))
-print("length of test_txt_path",len(test_txt_path))
+print("length of train_txt_path", len(train_txt_path))
+print("length of valid_txt_path", len(valid_txt_path))
+print("length of test_txt_path", len(test_txt_path))
 
-with open('/home/edlab-hglee/cxr-bert/dset/cxr_train.json', 'w', encoding='utf-8') as make_file:
+train_img_path = glob('/home/ubuntu/HG/r_mimic-cxr/img/Train/*.jpg')
+valid_img_path = glob('/home/ubuntu/HG/r_mimic-cxr/img/Valid/*.jpg')
+test_img_path = glob('/home/ubuntu/HG/r_mimic-cxr/img/Test/*.jpg')
+
+print("length of train_img_path", len(train_img_path))
+print("length of valid_img_path", len(valid_img_path))
+print("length of test_img_path", len(test_img_path))
+
+
+with open('/home/ubuntu/HG/cxr-bert/dset/img_512/cxr_train.json', 'w', encoding='utf-8') as make_file:
     for itr, data in enumerate(train_txt_path):
         f = open(data, 'r')
         context = f.read()
         a = data.split('/')[-1].split('.')[0]
-        #file_data['id'] = str(a+'.jpg')
         file_data['id'] = str(a)
         file_data['text'] = context
-        file_data["img"] = str("/home/edlab-hglee/Dataset/MIMIC-CXR/img/Train/" + str(a) + '.jpg')
+        file_data["img"] = str("/home/ubuntu/HG/r_mimic-cxr/img/Train/" + str(a) + '.jpg')
         print(json.dumps(file_data, ensure_ascii=False))
         json.dump(file_data, make_file, ensure_ascii=False)
         make_file.write('\n')
