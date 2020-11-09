@@ -13,49 +13,6 @@ from transformers import BertModel, BertTokenizer
 from transformers.tokenization_albert import AlbertTokenizer
 
 
-def random_word(tokens, vocab_range, mask):
-    """
-        Masking some random tokens for Language Model task with probabilities as in
-            the original BERT paper.
-        tokens: list of int, tokenized sentence.
-        vocab_range: for choosing a random word
-        return : (list of int, list of int), masked tokens and related labels for
-            LM prediction
-        """
-    output_label = []
-
-    for i, token in enumerate(tokens):
-        prob = random.random()
-        # mask token with 15% probability
-        if prob < 0.15:
-            prob /= 0.15
-
-            # 80% randomly change token to mask token
-            if prob < 0.8:
-                tokens[i] = mask
-
-            # 10% randomly change token to random token
-            # TODO: check, if or elif
-            elif prob < 0.9:
-                tokens[i] = random.choice(list(range(vocab_range)))
-
-            # rest 10% randomly keep current token
-
-            # append current token to output (we will predict these later)
-            output_label.append(token)
-        else:
-            # no masking token(will be ignored by loss function later)
-            #output_label.append(0)
-            output_label.append(-1)
-
-    if all(o == -1 for o in output_label):
-        # at least mask 1
-        output_label[0] = tokens[0]
-        tokens[0] = mask
-
-    return tokens, output_label
-
-
 class CXRDataset(Dataset):  # for both MLM and ITM
     def __init__(self, data_path, tokenizer, transforms, args):
         self.args = args
@@ -82,8 +39,6 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         return len(self.data)
 
     def __getitem__(self, idx):
-        study_id = self.data[idx]['id']  # study_id
-
         # MLM
         tokenized_sentence = self.tokenizer(self.data[idx]['text'])  # ['i','ate','an','apple'], no special token
 
@@ -99,8 +54,9 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         input_ids = [self.vocab_stoi["[SEP]"]] + input_ids + [self.vocab_stoi["[SEP]"]]
         txt_labels_t = [0] + txt_labels + [0]  # [SEP], txt, [SEP]
 
-        txt_labels_p_i = [0] * (self.max_seq_len - len(input_ids) + self.args.num_image_embeds)  # [PAD]s, IMGs. [CLS]
-
+        # txt_labels_p_i = [0] * (self.max_seq_len - len(input_ids) + self.args.num_image_embeds)  # [PAD]s, IMGs. [CLS]
+        txt_labels_i = [0] * (self.args.num_image_embeds + 1)
+        txt_labels_p = [0] * (self.max_seq_len - 1 - len(txt_labels_t))
 
         # TODO(Done): Attention_mask(to distinguish padded or not), also applied to special tokens
         attn_masks_t = [1] * len(input_ids)
@@ -112,16 +68,19 @@ class CXRDataset(Dataset):  # for both MLM and ITM
             padding = [self.vocab_stoi["[PAD]"] for _ in range(self.max_seq_len - len(input_ids) - 1)]  # [CLS]
 
         input_ids.extend(padding)
-        #txt_labels_t.extend(padding)
+        # txt_labels_t.extend(padding)
         attn_masks_t.extend(padding)
+        txt_labels_t.extend(padding)
 
         # txt_labels = txt_labels_t + txt_labels_p_i
         # attn_masks = attn_masks_t + attn_masks_i  # attn_masks [1, 1, 1, 1, 0, 0, 1, 1, 1] -> Token, Pad, Img_feat
-        txt_labels = txt_labels_p_i + txt_labels_t
+
+        # txt_labels = txt_labels_p_i + txt_labels_t
+        txt_labels = txt_labels_i + txt_labels_t
         attn_masks = attn_masks_i + attn_masks_t  # attn_masks [1, 1, 1, 1, 1, 1, 1, 1, 0, 0] -> Img_feat, Token, Pad
 
         # TODO: to distinguish txt or img
-        #segment_label = ([0 for _ in range(self.max_seq_len)] + [1 for _ in range(self.args.num_image_embeds)])
+        # segment_label = ([0 for _ in range(self.max_seq_len)] + [1 for _ in range(self.args.num_image_embeds)])
         # segment only for txt. cuz in cxrbert.py img_tok is segment for img
         segment = [1 for _ in range(self.max_seq_len - 1)]
 
@@ -132,13 +91,13 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         attn_masks = torch.tensor(attn_masks)
         segment = torch.tensor(segment)
 
-        image = Image.open(os.path.join(self.data_dir, self.data[idx]['img']))  #.convert("RGB")
+        image = Image.open(os.path.join(self.data_dir, self.data[idx]['img']))  # .convert("RGB")
         image = self.transforms(image)
 
         # ITM
         # TODO: ITM negative sample
         txt_itm, _, is_aligned = self.random_pair_sampling(idx)
-        #input_ids_ITM = self.BertTokenizer(txt_itm, padding='max_length', max_length=self.max_seq_len)['input_ids']
+        # input_ids_ITM = self.BertTokenizer(txt_itm, padding='max_length', max_length=self.max_seq_len)['input_ids']
         input_ids_ITM = [self.vocab_stoi["[SEP]"]] + encoded_sentence + [self.vocab_stoi["[SEP]"]]
         input_ids_ITM.extend(padding)
 
@@ -151,9 +110,9 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         sequence = 'I ate an apple'
         encoded_sequence = [CLS] I ate an apple [SEP] [PAD] [PAD]
                             -> 100, 3, 7, 101, 45, 105 , 0, 0 
-        
+
         through the random_word(), return input_ids, txt_labels
-        
+
         input_ids : for MLM and also only for TXT not IMG(sample random features), 
                     ex) 100, 3, 104[M], 101, 45, 105, 0, 0 //
         txt_labels : only for MLM
