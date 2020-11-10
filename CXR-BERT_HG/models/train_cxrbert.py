@@ -52,8 +52,8 @@ class CXRBERT_Trainer():
             config = AlbertConfig.from_pretrained(args.init_model)
         else:
             config = BertConfig.from_pretrained(args.init_model)
-        # self.model = CXRBERT(config, args).to(self.device)
-        self.model = BertForMaskedLM.from_pretrained('bert-base-uncased', return_dict=True).to(self.device)
+        self.model = CXRBERT(config, args).to(self.device)
+        # self.model = BertForMaskedLM.from_pretrained('bert-base-uncased', return_dict=True).to(self.device)
         # self.model.train()
         wandb.watch(self.model)
 
@@ -76,7 +76,7 @@ class CXRBERT_Trainer():
         # self.scheduler = lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='max', patience=args.lr_patience,
         #                                                 factor=args.lr_factor, verbose=True)
 
-        self.mlm_criterion = nn.CrossEntropyLoss(ignore_index=0)
+        self.mlm_criterion = nn.CrossEntropyLoss(ignore_index=-100)
         self.itm_criterion = nn.CrossEntropyLoss()
 
         self.log_freq = args.log_freq
@@ -104,8 +104,6 @@ class CXRBERT_Trainer():
 
         str_code = 'Train' if train else "Test"
 
-        self.model.train() if train else self.model.eval()
-
         data_iter = tqdm.tqdm(enumerate(data_loader),
                               desc=f'EP_{str_code}:{epoch}',
                               total=len(data_loader),
@@ -130,45 +128,24 @@ class CXRBERT_Trainer():
             input_ids_itm = input_ids_itm.to(self.device)
 
             with amp.autocast():
-                # mlm_output, itm_output = self.model(cls_tok, input_ids, attn_masks, segment, img)
-
-                # official_bert = BertForMaskedLM.from_pretrained('bert-base-uncased', return_dict=True).to(self.device)
-                # official_bert.train()
-                """
-                def forward(
-                        self,
-                        input_ids=None,
-                        attention_mask=None,
-                        token_type_ids=None,
-                        position_ids=None,
-                        head_mask=None,
-                        inputs_embeds=None,
-                        encoder_hidden_states=None,
-                        encoder_attention_mask=None,
-                        labels=None,
-                        output_attentions=None,
-                        output_hidden_states=None,
-                        return_dict=None,
-                        **kwargs
-                    ):
-                """
+                mlm_output, itm_output = self.model(cls_tok, input_ids, attn_masks, segment, img)
                 ###_, itm_output = self.model(cls_tok, input_ids_itm, attn_masks, segment, img)  # [bsz, hidden_sz] -> [bsz, 2] ..?
 
                 # print('mlm_output.size:', mlm_output.size())  # [bsz, seq_len, vocab_sz]
                 # print('txt_labels', txt_labels.size()) # torch.Size([16, 512])
-                # mlm_loss = self.mlm_criterion(mlm_output.transpose(1, 2), txt_labels)
+                mlm_loss = self.mlm_criterion(mlm_output.transpose(1, 2), txt_labels)
                 # print('label:', is_aligned.size())  # label: torch.Size([8])
-                # itm_loss = self.itm_criterion(itm_output, is_aligned)
+                itm_loss = self.itm_criterion(itm_output, is_aligned)
 
                 # TODO: weight each loss, mlm > itm
-                # loss = mlm_loss  # mlm_loss + itm_loss
+                loss = mlm_loss  # mlm_loss + itm_loss
 
-                input_txt = torch.cat((cls_tok, input_ids), dim=1)
-                output = self.model(input_ids=input_txt, attention_mask=attn_masks, labels=txt_labels)
-                loss = output[0]
-                # print('before:', loss)
-                loss = loss.mean()
-                # print('after:', loss)
+                # input_txt = torch.cat((cls_tok, input_ids), dim=1)
+                # output = self.model(input_ids=input_txt, attention_mask=attn_masks, labels=txt_labels)
+                # loss = output[0]
+                # # print('before:', loss)
+                # loss = loss.mean()
+                # # print('after:', loss)
 
             if train:
                 self.step_cnt += 1
@@ -186,13 +163,13 @@ class CXRBERT_Trainer():
             avg_loss += loss.item()
 
             # itm prediction accuracy
-            # correct = itm_output.argmax(dim=-1).eq(is_aligned).sum().item()
-            # total_correct += correct
-            # total_element += is_aligned.nelement()
+            correct = itm_output.argmax(dim=-1).eq(is_aligned).sum().item()
+            total_correct += correct
+            total_element += is_aligned.nelement()
 
             # mlm accuracy
-            # mlm_correct = mlm_output.argmax(dim=-1).eq(txt_labels).sum().item()
-            mlm_correct = output[1].argmax(dim=-1).eq(txt_labels).sum().item()
+            mlm_correct = mlm_output.argmax(dim=-1).eq(txt_labels).sum().item()
+            # mlm_correct = output[1].argmax(dim=-1).eq(txt_labels).sum().item()
             total_mlm_correct += mlm_correct
             total_mlm_element += txt_labels.nelement()
 
@@ -201,11 +178,10 @@ class CXRBERT_Trainer():
                 "iter": i,
                 "avg_loss": round(avg_loss / (i + 1), 3),
                 "mlm_avg_acc": round(total_mlm_correct / total_mlm_element * 100, 3),
-                # "itm_avg_acc": round(total_correct / total_element * 100, 3),
+                "itm_avg_acc": round(total_correct / total_element * 100, 3),
                 "loss": round(loss.item(), 3),
-                "mlm_loss": round(loss.item(), 3),
-                # "mlm_loss": round(mlm_loss.item(), 3),
-                # "itm_loss": round(itm_loss.item(), 3),
+                "mlm_loss": round(mlm_loss.item(), 3),
+                "itm_loss": round(itm_loss.item(), 3),
                 # "lr": round(self.optimizer.state_dict()['param_groups'][0]['lr'], 3),
             }
 
@@ -215,19 +191,18 @@ class CXRBERT_Trainer():
                     wandb.log({
                         "avg_loss": avg_loss / (i + 1),
                         "mlm_acc": total_mlm_correct / total_mlm_element * 100,
-                        # "itm_acc": total_correct / total_element * 100,
-                        "mlm_loss": round(loss.item(), 3),
-                        # "mlm_loss": mlm_loss.item(),
-                        # "itm_loss": itm_loss.item(),
+                        "itm_acc": total_correct / total_element * 100,
+                        "mlm_loss": mlm_loss.item(),
+                        "itm_loss": itm_loss.item(),
                         "loss": loss.item(),
                     })
                 else:
                     wandb.log({
                         "avg_loss_": avg_loss / (i + 1),
                         "mlm_acc_": total_mlm_correct / total_mlm_element * 100,
-                        # "itm_acc_": total_correct / total_element * 100,
-                        # "mlm_loss_": mlm_loss.item(),
-                        # "itm_loss_": itm_loss.item(),
+                        "itm_acc_": total_correct / total_element * 100,
+                        "mlm_loss_": mlm_loss.item(),
+                        "itm_loss_": itm_loss.item(),
                         "loss_": loss.item(),
                     })
 
@@ -241,14 +216,10 @@ class CXRBERT_Trainer():
             #         "tr_loss": loss.item(),
             #     })
 
-        # print(f'EP{epoch}_{str_code}, '
-        #       f'avg_loss = {round(avg_loss / len(data_iter), 3)}, '
-        #       f'total_mlm_acc = {round(total_mlm_correct / total_mlm_element * 100.0, 3)}, '
-        #       f'total_itm_acc = {round(total_correct / total_element * 100.0, 3)}')
-
         print(f'EP{epoch}_{str_code}, '
               f'avg_loss = {round(avg_loss / len(data_iter), 3)}, '
-              f'total_mlm_acc = {round(total_mlm_correct / total_mlm_element * 100.0, 3)}')
+              f'total_mlm_acc = {round(total_mlm_correct / total_mlm_element * 100.0, 3)}, '
+              f'total_itm_acc = {round(total_correct / total_element * 100.0, 3)}')
 
     def save(self, epoch, file_path):
         """

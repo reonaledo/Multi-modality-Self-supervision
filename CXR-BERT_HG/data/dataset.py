@@ -63,8 +63,8 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         input_ids, txt_labels = self.random_word(encoded_sentence)
 
         input_ids = [self.vocab_stoi["[SEP]"]] + input_ids + [self.vocab_stoi["[SEP]"]]
-        txt_labels_t = [0] + txt_labels + [0]  # [SEP], txt, [SEP]
-        txt_labels_i = [0] * (self.args.num_image_embeds + 1)
+        txt_labels_t = [-100] + txt_labels + [-100]  # [SEP], txt, [SEP]  # 0
+        txt_labels_i = [-100] * (self.args.num_image_embeds + 1)  # 0
 
         attn_masks_t = [1] * len(input_ids)
         attn_masks_i = [1] * (self.args.num_image_embeds + 1)  # [CLS]
@@ -73,7 +73,8 @@ class CXRDataset(Dataset):  # for both MLM and ITM
             padding = [self.vocab_stoi["<pad>"] for _ in range(self.max_seq_len - len(input_ids) - 1)]  # [CLS]
         elif self.args.bert_model == 'bert-base-uncased':
             padding = [self.vocab_stoi["[PAD]"] for _ in range(self.max_seq_len - len(input_ids) - 1)]  # [CLS]
-
+            # padding = [-100 for _ in range(self.max_seq_len - len(input_ids) - 1)]  # [CLS]
+        # TODO: padding set to 0(origin) or -100(for ignored in loss computing)
         input_ids.extend(padding)
         attn_masks_t.extend(padding)
         txt_labels_t.extend(padding)
@@ -151,12 +152,11 @@ class CXRDataset(Dataset):  # for both MLM and ITM
                 # else:
                 #     tokens[i] = token
                 output_label.append(token)
-
             else:
                 tokens[i] = token
-                output_label.append(0)
+                output_label.append(-100)  # 0
 
-        if all(o == 0 for o in output_label):
+        if all(o == -100 for o in output_label):  # 0
             # at least one mask
             output_label[0] = tokens[0]
             tokens[0] = self.vocab_stoi["[MASK]"]

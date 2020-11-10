@@ -6,7 +6,8 @@ from torch.utils.data import DataLoader
 from data.helper import get_transforms
 from data.dataset import CXRDataset
 from models.cxrbert import CXRBERT, CXRBertEncoder
-from models.train import CXRBERT_Trainer
+# from models.train import CXRBERT_Trainer  # BertForMaskedLM
+from models.train_cxrbert import CXRBERT_Trainer  # CXR_BERT
 
 from transformers import BertTokenizer, AlbertTokenizer
 from utils.utils import *
@@ -54,7 +55,7 @@ def train(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--train_dataset", type=str, default='/home/ubuntu/HG/cxr-bert/dset/img_512/cxr_valid.json',
+    parser.add_argument("--train_dataset", type=str, default='/home/ubuntu/HG/cxr-bert/dset/img_512/cxr_train.json',
                         help="train dataset for training")
     parser.add_argument("--test_dataset", type=str, default=None,
                         help='test dataset for evaluate train set')
@@ -68,7 +69,7 @@ if __name__ == '__main__':
     parser.add_argument("--with_cuda", type=bool, default=True, help="training with CUDA: True or False")
     parser.add_argument("--cuda_devices", type=int, nargs='+', default=None, help="CUDA device ids")
 
-    parser.add_argument("--epochs", type=int, default=2, help='number of epochs')
+    parser.add_argument("--epochs", type=int, default=1000, help='number of epochs')
     parser.add_argument("--batch_size", type=int, default=32, help="number of batch size")
     parser.add_argument("--num_workers", type=int, default=2, help="dataloader worker size")
 
