@@ -76,7 +76,7 @@ class CXRBERT_Trainer():
         # self.scheduler = lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='max', patience=args.lr_patience,
         #                                                 factor=args.lr_factor, verbose=True)
 
-        self.mlm_criterion = nn.CrossEntropyLoss(ignore_index=-100)
+        self.mlm_criterion = nn.CrossEntropyLoss(ignore_index=0)
         self.itm_criterion = nn.CrossEntropyLoss()
 
         self.log_freq = args.log_freq
