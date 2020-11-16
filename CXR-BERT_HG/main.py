@@ -1,13 +1,21 @@
+"""
+for running cxr-bert
+"""
+
 import wandb
 import argparse
 from datetime import date, time, datetime
 from torch.utils.data import DataLoader
 
 from data.helper import get_transforms
-from data.dataset import CXRDataset
 from models.cxrbert import CXRBERT, CXRBertEncoder
-# from models.train import CXRBERT_Trainer  # BertForMaskedLM
+
+from data.dataset import CXRDataset
 from models.train_cxrbert import CXRBERT_Trainer  # CXR_BERT
+
+# from data.dataset_bertformlm import CXRDataset
+# from models.train import CXRBERT_Trainer  # BertForMaskedLM
+
 
 from transformers import BertTokenizer, AlbertTokenizer
 from utils.utils import *
@@ -70,13 +78,13 @@ if __name__ == '__main__':
     parser.add_argument("--cuda_devices", type=int, nargs='+', default=None, help="CUDA device ids")
 
     parser.add_argument("--epochs", type=int, default=1000, help='number of epochs')
-    parser.add_argument("--batch_size", type=int, default=32, help="number of batch size")
+    parser.add_argument("--batch_size", type=int, default=16, help="number of batch size")
     parser.add_argument("--num_workers", type=int, default=2, help="dataloader worker size")
 
-    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--lr", type=float, default=1e-5)
     parser.add_argument("--dropout_prob", type=float, default=0.1)
 
-    parser.add_argument("--warmup_steps", type=int, default=10000)
+    # parser.add_argument("--warmup_steps", type=int, default=10000)
     parser.add_argument("--lr_patience", type=int, default=10)  # lr_scheduler.ReduceLROnPlateau
     parser.add_argument("--lr_factor", type=float, default=0.2)
     # TODO: img-SGD, txt-AdamW
@@ -89,17 +97,22 @@ if __name__ == '__main__':
     parser.add_argument("--bert_model", type=str, default='bert-base-uncased',
                         choices=["bert-base-uncased", "BlueBERT", "albert-base-v2"])  # for tokenizing ...
 
-    parser.add_argument("--init_model", type=str, default='BlueBERT',
-                        choices=["bert-base-uncased", "BlueBERT", "albert-base-v2"])
+
+
+    parser.add_argument("--init_model", type=str, default="bert-base-uncased",
+                        choices=["bert-base-uncased", "BlueBERT", "albert-base-v2",
+                                 "google/bert_uncased_L-4_H-512_A-8", "google/bert_uncased_L-2_H-128_A-2"])
+    parser.add_argument("--embedding_size", type=int, default=768, choices=[768, 512, 128])
+    parser.add_argument("--hidden_size", type=int, default=768, choices=[768, 512, 128])
+
+
 
     parser.add_argument("--max_seq_len", type=int, default=512, help="maximum sequence len")
     parser.add_argument("--vocab_size", type=int, default=30522, choices=[30522, 30000])
-    parser.add_argument("--embedding_size", type=int, default=768, choices=[768, 128])
-    parser.add_argument("--hidden_size", type=int, default=768)
 
     parser.add_argument("--img_hidden_sz", type=int, default=2048)
     parser.add_argument("--img_embed_pool_type", type=str, default="max", choices=["max", "avg"])
-    parser.add_argument("--num_image_embeds", type=int, default=0)  # TODO: 224x224, output fiber 49...
+    parser.add_argument("--num_image_embeds", type=int, default=100)  # TODO: 224x224, output fiber 49...
     #-------------------------------------------------------------------------------------------
     # TODO: ...!
     parser.add_argument("--gradient_accumulation_steps", type=int, default=24)  # loss, optimizer.step() slowly

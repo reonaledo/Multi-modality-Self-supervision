@@ -22,6 +22,7 @@ def truncate_img_txt(num_image_embeds, txt_tokens, max_seq_len):
         else:
             txt_tokens.pop()
 
+
 class CXRDataset(Dataset):  # for both MLM and ITM
     def __init__(self, data_path, tokenizer, transforms, args):
         self.args = args
@@ -63,8 +64,8 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         input_ids, txt_labels = self.random_word(encoded_sentence)
 
         input_ids = [self.vocab_stoi["[SEP]"]] + input_ids + [self.vocab_stoi["[SEP]"]]
-        txt_labels_t = [0] + txt_labels + [0]  # [SEP], txt, [SEP]  # 0
-        txt_labels_i = [0] * (self.args.num_image_embeds + 1)  # 0
+        txt_labels_t = [-100] + txt_labels + [-100]  # [SEP], txt, [SEP]  # 0
+        txt_labels_i = [-100] * (self.args.num_image_embeds + 1)  # 0
 
         attn_masks_t = [1] * len(input_ids)
         attn_masks_i = [1] * (self.args.num_image_embeds + 1)  # [CLS]
@@ -73,11 +74,11 @@ class CXRDataset(Dataset):  # for both MLM and ITM
             padding = [self.vocab_stoi["<pad>"] for _ in range(self.max_seq_len - len(input_ids) - 1)]  # [CLS]
         elif self.args.bert_model == 'bert-base-uncased':
             padding = [self.vocab_stoi["[PAD]"] for _ in range(self.max_seq_len - len(input_ids) - 1)]  # [CLS]
-            # padding = [-100 for _ in range(self.max_seq_len - len(input_ids) - 1)]  # [CLS]
+            label_padding = [-100 for _ in range(self.max_seq_len - len(input_ids) - 1)]  # [CLS]
         # TODO: padding set to 0(origin) or -100(for ignored in loss computing)
         input_ids.extend(padding)
         attn_masks_t.extend(padding)
-        txt_labels_t.extend(padding)
+        txt_labels_t.extend(label_padding)
 
         txt_labels = txt_labels_i + txt_labels_t
         attn_masks = attn_masks_i + attn_masks_t  # attn_masks [1, 1, 1, 1, 1, 1, 1, 1, 0, 0] -> Img_feat, Token, Pad
@@ -91,13 +92,13 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         attn_masks = torch.tensor(attn_masks)
         segment = torch.tensor(segment)
 
-        image = Image.open(os.path.join(self.data_dir, self.data[idx]['img']))  #.convert("RGB")
+        image = Image.open(os.path.join(self.data_dir, self.data[idx]['img']))  # .convert("RGB")
         image = self.transforms(image)
 
         # ITM
         # TODO: ITM negative sample
         txt_itm, _, is_aligned = self.random_pair_sampling(idx)
-        #input_ids_ITM = self.BertTokenizer(txt_itm, padding='max_length', max_length=self.max_seq_len)['input_ids']
+        # input_ids_ITM = self.BertTokenizer(txt_itm, padding='max_length', max_length=self.max_seq_len)['input_ids']
         input_ids_ITM = [self.vocab_stoi["[SEP]"]] + encoded_sentence + [self.vocab_stoi["[SEP]"]]
         input_ids_ITM.extend(padding)
 
@@ -110,9 +111,9 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         sequence = 'I ate an apple'
         encoded_sequence = [CLS] I ate an apple [SEP] [PAD] [PAD]
                             -> 100, 3, 7, 101, 45, 105 , 0, 0 
-        
+
         through the random_word(), return input_ids, txt_labels
-        
+
         input_ids : for MLM and also only for TXT not IMG(sample random features), 
                     ex) 100, 3, 104[M], 101, 45, 105, 0, 0 //
         txt_labels : only for MLM
@@ -154,7 +155,7 @@ class CXRDataset(Dataset):  # for both MLM and ITM
                 output_label.append(token)
             else:
                 tokens[i] = token
-                output_label.append(0)  # 0
+                output_label.append(-100)  # 0
 
         if all(o == -100 for o in output_label):  # 0
             # at least one mask
@@ -179,26 +180,26 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         rand_num = random.randint(0, len(self.data) - 1)
         txt = self.data[rand_num]['text']
         return txt
-#----------ITM for txt, img and labels---------------------------------------------
-    # def random_pair_sampling(self, idx):
-    #     _, _, label, txt, img = self.data[idx].keys()
-    #     d_label = self.data[idx][label]
-    #     d_txt = self.data[idx][txt]
-    #     d_img = self.data[idx][img]
-    #     if random.random() > 0.5:
-    #         return d_txt, d_img, 1
-    #     else:
-    #         for itr in range(10):
-    #             random_label = self.get_random_line()[1]
-    #             random_txt = self.get_random_line()[0]
-    #             if fuzz.token_sort_ratio(d_label, random_label) != 100:
-    #                 return random_txt, d_img, 0
-    #                 break
-    #             else:
-    #                 pass
-    #
-    # def get_random_line(self):
-    #     rand_num = random.randint(0, len(self.data) - 1)
-    #     txt = self.data[rand_num]['text']
-    #     label = self.data[rand_num]['label']
-    #     return txt, label
+# ----------ITM for txt, img and labels---------------------------------------------
+# def random_pair_sampling(self, idx):
+#     _, _, label, txt, img = self.data[idx].keys()
+#     d_label = self.data[idx][label]
+#     d_txt = self.data[idx][txt]
+#     d_img = self.data[idx][img]
+#     if random.random() > 0.5:
+#         return d_txt, d_img, 1
+#     else:
+#         for itr in range(10):
+#             random_label = self.get_random_line()[1]
+#             random_txt = self.get_random_line()[0]
+#             if fuzz.token_sort_ratio(d_label, random_label) != 100:
+#                 return random_txt, d_img, 0
+#                 break
+#             else:
+#                 pass
+#
+# def get_random_line(self):
+#     rand_num = random.randint(0, len(self.data) - 1)
+#     txt = self.data[rand_num]['text']
+#     label = self.data[rand_num]['label']
+#     return txt, label

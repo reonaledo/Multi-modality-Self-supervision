@@ -4,7 +4,7 @@ import torch.nn as nn
 from models.image import ImageEncoder_pool, ImageEncoder_cnn, Img_patch_embedding
 
 from transformers import BertConfig, AlbertConfig # BertModel
-from transformers.modeling_bert import BertModel
+from transformers.modeling_bert import BertModel, BertForMaskedLM
 from transformers.modeling_albert import AlbertModel
 from transformers.modeling_utils import PreTrainedModel, ModuleUtilsMixin
 
@@ -50,15 +50,18 @@ class CXRBertEncoder(nn.Module):  # MultimodalBertEncoder, BERT
         elif args.init_model == 'albert-base-v2':
             bert = AlbertModel.from_pretrained('albert-base-v2')
 
-        self.txt_embeddings = bert.embeddings
+        else:
+            bert = BertModel.from_pretrained(args.init_model)
+        self.bert = bert
+        self.txt_embeddings = self.bert.embeddings
         self.img_embeddings = ImageBertEmbeddings(args, self.txt_embeddings)
 
         #self.img_encoder = ImageEncoder_pool(args)
         # self.img_encoder = Img_patch_embedding(image_size=256, patch_size=32, dim=2048)  # ViT
         self.img_encoder = ImageEncoder_cnn(args)
-        self.encoder = bert.encoder
+        self.encoder = self.bert.encoder
 
-        self.pooler = bert.pooler
+        self.pooler = self.bert.pooler
 
     def forward(self, cls_tok, input_txt, attn_mask, segment, input_img):
         extended_attn_mask = attn_mask.unsqueeze(1).unsqueeze(2)  # (bsz, 1, 1, len(attn_mask))
@@ -113,7 +116,7 @@ class MaskedLanguageModel(nn.Module):
         """
         super().__init__()
         self.linear = nn.Linear(hidden, vocab_size)
-        # self.linear.weight = CXRBertEncoder(args).txt_embeddings.word_embeddings.weight
+        self.linear.weight = CXRBertEncoder(args).txt_embeddings.word_embeddings.weight
         self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, x):
@@ -121,7 +124,6 @@ class MaskedLanguageModel(nn.Module):
         # return: torch.Size([8, 512, 30522])
         # return self.softmax(self.linear(x))
         return self.linear(x)
-
 
 class ImageTextMatching(nn.Module):
     """
