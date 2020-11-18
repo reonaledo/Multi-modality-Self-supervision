@@ -50,7 +50,14 @@ class CXRDataset(Dataset):  # for both MLM and ITM
 
     def __getitem__(self, idx):
         # MLM
-        tokenized_sentence = self.tokenizer(self.data[idx]['text'])  # ['i','ate','an','apple'], no special token
+        origin_txt, img_path, is_aligned = self.random_pair_sampling(idx)
+
+        # image = Image.open(os.path.join(self.data_dir, self.data[idx]['img']))  #.convert("RGB")
+        image = Image.open(os.path.join(self.data_dir, img_path))  # .convert("RGB")
+        image = self.transforms(image)
+
+        # tokenized_sentence = self.tokenizer(self.data[idx]['text'])  # ['i','ate','an','apple'], no special token
+        tokenized_sentence = self.tokenizer(origin_txt)  # ['i','ate','an','apple'], no special token
 
         truncate_img_txt(self.args.num_image_embeds, tokenized_sentence, self.args.max_seq_len)
 
@@ -92,12 +99,9 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         attn_masks = torch.tensor(attn_masks)
         segment = torch.tensor(segment)
 
-        image = Image.open(os.path.join(self.data_dir, self.data[idx]['img']))  # .convert("RGB")
-        image = self.transforms(image)
-
         # ITM
         # TODO: ITM negative sample
-        txt_itm, _, is_aligned = self.random_pair_sampling(idx)
+        # txt_itm, _, is_aligned = self.random_pair_sampling(idx)
         # input_ids_ITM = self.BertTokenizer(txt_itm, padding='max_length', max_length=self.max_seq_len)['input_ids']
         input_ids_ITM = [self.vocab_stoi["[SEP]"]] + encoded_sentence + [self.vocab_stoi["[SEP]"]]
         input_ids_ITM.extend(padding)
@@ -130,6 +134,11 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         # print('segment:', segment.size())
         # print('is_aligned:', is_aligned)
         # print('input_ids_ITM:', input_ids_ITM.size())
+
+        print('origin_txt:', origin_txt[:100])
+        print('img_path:', img_path)
+        print('is_aligned:', is_aligned)
+        print('--------------------------------------------')
 
         return cls_tok, input_ids, txt_labels, attn_masks, image, segment, is_aligned, input_ids_ITM
 
