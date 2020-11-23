@@ -1,15 +1,17 @@
 """
-CXR-BERT training code,,,
+for running BertForMaskedLM with bert-base-uncased, bio-clinical-bert, bert_tiny
+
 """
 import os
 import tqdm
 import wandb
 import datetime
+import numpy as np
 
 import torch
 import torch.nn as nn
 from torch.optim import Adam, lr_scheduler
-from torch.optim import AdamW
+
 import torch.cuda.amp as amp
 # TODO: change when pytorch 1.6 installed instead of torch 1.6
 # from optims.AdamW import AdamW
@@ -21,10 +23,13 @@ from transformers import BertModel, BertConfig, AlbertConfig
 from transformers.modeling_utils import PreTrainedModel
 from transformers.modeling_bert import BertForMaskedLM
 
+from torch.optim import AdamW
+from transformers.optimization import AdamW
 from torch.utils.tensorboard import SummaryWriter
 
 now = datetime.datetime.now()
 # summary = SummaryWriter('./runs/1029')
+
 
 class CXRBERT_Trainer():
     """
@@ -52,8 +57,8 @@ class CXRBERT_Trainer():
             config = AlbertConfig.from_pretrained(args.init_model)
         else:
             config = BertConfig.from_pretrained(args.init_model)
-        # self.model = CXRBERT(config, args).to(self.device)
-        self.model = BertForMaskedLM.from_pretrained('bert-base-uncased', return_dict=True).to(self.device)
+        self.model = CXRBERT(config, args).to(self.device)
+        # self.model = BertForMaskedLM.from_pretrained(args.init_model, return_dict=True).to(self.device)
         # self.model.train()
         wandb.watch(self.model)
 
@@ -68,15 +73,16 @@ class CXRBERT_Trainer():
         # self.optimizer = Adam(self.model.parameters(), lr=args.lr,
         #                       betas=(args.beta1, args.beta2), weight_decay=args.weight_decay)
 
-        self.optimizer = AdamW(self.model.parameters(), lr=args.lr, betas=(args.beta1, args.beta2),
-                               eps=args.eps, weight_decay=args.weight_decay)
+        # self.optimizer = AdamW(self.model.parameters(), lr=args.lr, betas=(args.beta1, args.beta2),
+        #                        eps=args.eps, weight_decay=args.weight_decay)
+        self.optimizer = AdamW(self.model.parameters(), lr=args.lr)
 
-        self.optim_schedule = ScheduledOptim(self.optimizer, args.hidden_size, n_warmup_steps=args.warmup_steps)
+        # self.optim_schedule = ScheduledOptim(self.optimizer, args.hidden_size, n_warmup_steps=args.warmup_steps)
 
         # self.scheduler = lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='max', patience=args.lr_patience,
         #                                                 factor=args.lr_factor, verbose=True)
 
-        self.mlm_criterion = nn.CrossEntropyLoss(ignore_index=0)
+        self.mlm_criterion = nn.CrossEntropyLoss(ignore_index=-100)
         self.itm_criterion = nn.CrossEntropyLoss()
 
         self.log_freq = args.log_freq
@@ -130,7 +136,7 @@ class CXRBERT_Trainer():
             input_ids_itm = input_ids_itm.to(self.device)
 
             with amp.autocast():
-                # mlm_output, itm_output = self.model(cls_tok, input_ids, attn_masks, segment, img)
+                mlm_output, itm_output = self.model(cls_tok, input_ids, attn_masks, segment, img)
 
                 # official_bert = BertForMaskedLM.from_pretrained('bert-base-uncased', return_dict=True).to(self.device)
                 # official_bert.train()
@@ -156,95 +162,90 @@ class CXRBERT_Trainer():
 
                 # print('mlm_output.size:', mlm_output.size())  # [bsz, seq_len, vocab_sz]
                 # print('txt_labels', txt_labels.size()) # torch.Size([16, 512])
-                # mlm_loss = self.mlm_criterion(mlm_output.transpose(1, 2), txt_labels)
-                # print('label:', is_aligned.size())  # label: torch.Size([8])
-                # itm_loss = self.itm_criterion(itm_output, is_aligned)
+                mlm_loss = self.mlm_criterion(mlm_output.transpose(1, 2), txt_labels)
+                # print('label:', is_aligned.size())  # label: torch.Size([8]),, itm_output: [bsz, 2]
+                itm_loss = self.itm_criterion(itm_output, is_aligned)
 
                 # TODO: weight each loss, mlm > itm
-                # loss = mlm_loss  # mlm_loss + itm_loss
+                loss = itm_loss + mlm_loss
 
-                input_txt = torch.cat((cls_tok, input_ids), dim=1)
-                output = self.model(input_ids=input_txt, attention_mask=attn_masks, labels=txt_labels)
-                loss = output[0]
+                ## for BertForMaskedLM
+                # input_txt = torch.cat((cls_tok, input_ids), dim=1)
+                # output = self.model(input_ids=input_txt, attention_mask=attn_masks, labels=txt_labels)
+                # loss = output[0]
                 # print('before:', loss)
-                loss = loss.mean()
+                # loss = loss.mean()  # using single GPU
                 # print('after:', loss)
 
             if train:
-                self.step_cnt += 1
                 # self.model.train()
-                self.optim_schedule.zero_grad()
+                # self.optim_schedule.zero_grad()
+                self.optimizer.zero_grad()
                 # loss.backward()
                 scaler.scale(loss).backward()
                 scaler.step(self.optimizer)
                 # self.optim_schedule.step_and_update_lr()
-                self.optim_schedule.update_lr()  # self.optim_schedule.step_and_update_lr()
+                # self.optim_schedule.update_lr()  # self.optim_schedule.step_and_update_lr()
                 scaler.update()
-            else:
-                self.model.eval()
 
             avg_loss += loss.item()
 
             # itm prediction accuracy
-            # correct = itm_output.argmax(dim=-1).eq(is_aligned).sum().item()
-            # total_correct += correct
-            # total_element += is_aligned.nelement()
+            correct = itm_output.argmax(dim=-1).eq(is_aligned).sum().item()
+            total_correct += correct
+            total_element += is_aligned.nelement()
 
             # mlm accuracy
             # mlm_correct = mlm_output.argmax(dim=-1).eq(txt_labels).sum().item()
-            mlm_correct = output[1].argmax(dim=-1).eq(txt_labels).sum().item()
-            total_mlm_correct += mlm_correct
-            total_mlm_element += txt_labels.nelement()
+            # mlm_correct = output[1].argmax(dim=-1).eq(txt_labels).sum().item()
+            # total_mlm_correct += mlm_correct
+            # total_mlm_element += txt_labels.nelement()
+
+            # eq = (output[1].argmax(dim=-1).eq(txt_labels)).cpu().numpy()
+            eq = (mlm_output.argmax(dim=-1).eq(txt_labels)).cpu().numpy()
+            txt_labels_np = txt_labels.cpu().numpy()
+            for bs, label in enumerate(txt_labels_np):
+                index = np.where(label == -100)[0]
+                f_label = np.delete(label, index)
+                f_eq = np.delete(eq[bs], index)
+                total_mlm_correct += f_eq.sum()
+                total_mlm_element += len(f_label)
 
             post_fix = {
                 "epoch": epoch,
                 "iter": i,
                 "avg_loss": round(avg_loss / (i + 1), 3),
                 "mlm_avg_acc": round(total_mlm_correct / total_mlm_element * 100, 3),
-                # "itm_avg_acc": round(total_correct / total_element * 100, 3),
+                "itm_avg_acc": round(total_correct / total_element * 100, 3),
                 "loss": round(loss.item(), 3),
-                "mlm_loss": round(loss.item(), 3),
-                # "mlm_loss": round(mlm_loss.item(), 3),
-                # "itm_loss": round(itm_loss.item(), 3),
+                "mlm_loss": round(mlm_loss.item(), 3),
+                "itm_loss": round(itm_loss.item(), 3),
                 # "lr": round(self.optimizer.state_dict()['param_groups'][0]['lr'], 3),
             }
+            if train:
+                wandb.log({
+                    "avg_loss": avg_loss / (i + 1),
+                    "mlm_acc": total_mlm_correct / total_mlm_element * 100,
+                    "itm_acc": total_correct / total_element * 100,
+                    # "mlm_loss": round(loss.item(), 3),
+                    "mlm_loss": mlm_loss.item(),
+                    "itm_loss": itm_loss.item(),
+                    "loss": loss.item(),
+                })
+
+            else:
+                wandb.log({
+                    "eval_avg_loss": avg_loss / (i + 1),
+                    "eval_mlm_acc": total_mlm_correct / total_mlm_element * 100,
+                    "eval_itm_acc": total_correct / total_element * 100,
+                    # "mlm_loss": round(loss.item(), 3),
+                    "eval_mlm_loss": mlm_loss.item(),
+                    "eval_itm_loss": itm_loss.item(),
+                    "eval_loss": loss.item(),
+                })
 
             if i % self.log_freq == 0:
                 data_iter.write(str(post_fix))
-                if train:
-                    wandb.log({
-                        "avg_loss": avg_loss / (i + 1),
-                        "mlm_acc": total_mlm_correct / total_mlm_element * 100,
-                        # "itm_acc": total_correct / total_element * 100,
-                        "mlm_loss": round(loss.item(), 3),
-                        # "mlm_loss": mlm_loss.item(),
-                        # "itm_loss": itm_loss.item(),
-                        "loss": loss.item(),
-                    })
-                else:
-                    wandb.log({
-                        "avg_loss_": avg_loss / (i + 1),
-                        "mlm_acc_": total_mlm_correct / total_mlm_element * 100,
-                        # "itm_acc_": total_correct / total_element * 100,
-                        # "mlm_loss_": mlm_loss.item(),
-                        # "itm_loss_": itm_loss.item(),
-                        "loss_": loss.item(),
-                    })
-
-            # if train and i % 10 == 0:
-            #     wandb.log({
-            #         "tr_avg_loss": avg_loss / (i+1),
-            #         "tr_mlm_acc": total_mlm_correct / total_mlm_element * 100,
-            #         "tr_itm_acc": total_correct / total_element * 100,
-            #         "tr_mlm_loss": mlm_loss.item(),
-            #         "tr_itm_loss": itm_loss.item(),
-            #         "tr_loss": loss.item(),
-            #     })
-
-        # print(f'EP{epoch}_{str_code}, '
-        #       f'avg_loss = {round(avg_loss / len(data_iter), 3)}, '
-        #       f'total_mlm_acc = {round(total_mlm_correct / total_mlm_element * 100.0, 3)}, '
-        #       f'total_itm_acc = {round(total_correct / total_element * 100.0, 3)}')
 
         print(f'EP{epoch}_{str_code}, '
               f'avg_loss = {round(avg_loss / len(data_iter), 3)}, '
@@ -272,7 +273,7 @@ class CXRBERT_Trainer():
 
         # model_to_save = self.model.module if hasattr(self.model, 'module') else self.model
         # model_to_save.save
-        self.model.module.save_pretrained(file_path)
+        self.model.module.save_pretrained(file_path)  # multi GPU
         # self.model.save_pretrained()
         # self.model.save_pretrained(file_path)  # torch.nn.modules.module.ModuleAttributeError: 'DataParallel' object has no attribute 'save_pretrained'
         # print(f'EP: {epoch} Model saved on {output_path}')

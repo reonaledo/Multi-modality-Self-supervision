@@ -6,7 +6,7 @@ import json
 import random
 import numpy as np
 from PIL import Image
-# from fuzzywuzzy import fuzz
+from fuzzywuzzy import fuzz
 
 import torch
 from torch.utils.data import Dataset
@@ -135,11 +135,6 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         # print('is_aligned:', is_aligned)
         # print('input_ids_ITM:', input_ids_ITM.size())
 
-        print('origin_txt:', origin_txt[:100])
-        print('img_path:', img_path)
-        print('is_aligned:', is_aligned)
-        print('--------------------------------------------')
-
         return cls_tok, input_ids, txt_labels, attn_masks, image, segment, is_aligned, input_ids_ITM
 
     def random_word(self, tokens):
@@ -174,7 +169,7 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         return tokens, output_label
 
     def random_pair_sampling(self, idx):
-        _, txt, img = self.data[idx].keys()
+        _, txt, img = self.data[idx].keys()  # id, label, txt, img
         # _, _, _, txt, img = self.data[idx].keys()
 
         d_txt = self.data[idx][txt]
@@ -191,7 +186,7 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         return txt
 # ----------ITM for txt, img and labels---------------------------------------------
 # def random_pair_sampling(self, idx):
-#     _, _, label, txt, img = self.data[idx].keys()
+#     _, label, txt, img = self.data[idx].keys()
 #     d_label = self.data[idx][label]
 #     d_txt = self.data[idx][txt]
 #     d_img = self.data[idx][img]
@@ -201,7 +196,7 @@ class CXRDataset(Dataset):  # for both MLM and ITM
 #         for itr in range(10):
 #             random_label = self.get_random_line()[1]
 #             random_txt = self.get_random_line()[0]
-#             if fuzz.token_sort_ratio(d_label, random_label) != 100:
+#             if fuzz.token_sort_ratio(d_label, random_label) != 100:  # order not matter, ignore punctuation
 #                 return random_txt, d_img, 0
 #                 break
 #             else:

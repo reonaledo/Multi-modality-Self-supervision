@@ -35,6 +35,7 @@ class ImageBertEmbeddings(nn.Module):
         return embeddings
 
 class CXRBertEncoder(nn.Module):  # MultimodalBertEncoder, BERT
+# class CXRBertEncoder(PreTrainedModel):  # multi-gpu, save_pretrained problem.. not fixed
     def __init__(self, args):
         super().__init__()
         self.args = args
@@ -43,9 +44,10 @@ class CXRBertEncoder(nn.Module):  # MultimodalBertEncoder, BERT
             bert = BertModel.from_pretrained('bert-base-uncased')
 
         elif args.init_model == 'BlueBERT':
-            config = BertConfig.from_pretrained('/home/ubuntu/HG/cxr-bert/BlueBERT')
-            model_state_dict = torch.load('/home/ubuntu/HG/cxr-bert/BlueBERT/pytorch_model.bin')
-            bert = BertModel.from_pretrained('/home/ubuntu/HG/cxr-bert/BlueBERT', state_dict=model_state_dict, config=config)
+            bert = BertModel.from_pretrained('bionlp/bluebert_pubmed_mimic_uncased_L-12_H-768_A-12')
+            # config = BertConfig.from_pretrained('/home/ubuntu/HG/cxr-bert/BlueBERT')
+            # model_state_dict = torch.load('/home/ubuntu/HG/cxr-bert/BlueBERT/pytorch_model.bin')
+            # bert = BertModel.from_pretrained('/home/ubuntu/HG/cxr-bert/BlueBERT', state_dict=model_state_dict, config=config)
 
         elif args.init_model == 'albert-base-v2':
             bert = AlbertModel.from_pretrained('albert-base-v2')
@@ -103,6 +105,7 @@ class CXRBERT(PreTrainedModel):
 
     def forward(self, cls_tok, input_txt, attn_mask, segment, input_img):
         x = self.enc(cls_tok, input_txt, attn_mask, segment, input_img)  # torch.Size([32, 512, 768]) [bsz, seq_len, hidden]
+
         return self.mlm(x), self.itm(x)
 
 class MaskedLanguageModel(nn.Module):

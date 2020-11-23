@@ -1,5 +1,6 @@
 """
-for running cxr-bert
+for running BertForMaskedLM with bert-base-uncased, bio-clinical-bert, bert-tiny
+
 """
 
 import wandb
@@ -10,14 +11,15 @@ from torch.utils.data import DataLoader
 from data.helper import get_transforms
 from models.cxrbert import CXRBERT, CXRBertEncoder
 
-from data.dataset import CXRDataset
-from models.train_cxrbert import CXRBERT_Trainer  # CXR_BERT
+# from data.dataset import CXRDataset
+# from models.train_cxrbert import CXRBERT_Trainer  # CXR_BERT
 
 # from data.dataset_bertformlm import CXRDataset
-# from models.train import CXRBERT_Trainer  # BertForMaskedLM
+from data.dataset import CXRDataset
+from models.train import CXRBERT_Trainer  # BertForMaskedLM
 
 
-from transformers import BertTokenizer, AlbertTokenizer
+from transformers import BertTokenizer, AlbertTokenizer, AutoTokenizer
 from utils.utils import *
 
 def train(args):
@@ -28,8 +30,12 @@ def train(args):
 
     if args.bert_model == "albert-base-v2":
         tokenizer = AlbertTokenizer.from_pretrained(args.bert_model, do_lower_case=True).tokenize
-    else:
+    elif args.bert_model == "bert-base-uncased":
         tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=True).tokenize
+    elif args.bert_model == "Bio_clinical_bert":
+        tokenizer = AutoTokenizer.from_pretrained("emilyalsentzer/Bio_ClinicalBERT").tokenize
+    elif args.bert_model == "bert_tiny":
+        tokenizer = AutoTokenizer.from_pretrained("google/bert_uncased_L-2_H-128_A-2").tokenize
 
     transforms = get_transforms()
 
@@ -65,7 +71,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--train_dataset", type=str, default='/home/ubuntu/HG/cxr-bert/dset/img_512/cxr_train.json',
                         help="train dataset for training")
-    parser.add_argument("--test_dataset", type=str, default=None,
+    parser.add_argument("--test_dataset", type=str, default='/home/ubuntu/HG/cxr-bert/dset/img_512/cxr_test.json',
                         help='test dataset for evaluate train set')
 
     output_path = 'output/' + str(datetime.now())
@@ -84,7 +90,7 @@ if __name__ == '__main__':
     parser.add_argument("--lr", type=float, default=1e-5)
     parser.add_argument("--dropout_prob", type=float, default=0.1)
 
-    # parser.add_argument("--warmup_steps", type=int, default=10000)
+    # parser.add_argument("--warmup_steps", type=int, default=3000)
     parser.add_argument("--lr_patience", type=int, default=10)  # lr_scheduler.ReduceLROnPlateau
     parser.add_argument("--lr_factor", type=float, default=0.2)
     # TODO: img-SGD, txt-AdamW
@@ -94,21 +100,19 @@ if __name__ == '__main__':
     parser.add_argument("--weight_decay", type=float, default=0.01, help="weight_decay of adam")  # 0.01 , AdamW
 
     # TODO: loading BlueBERT
-    parser.add_argument("--bert_model", type=str, default='bert-base-uncased',
-                        choices=["bert-base-uncased", "BlueBERT", "albert-base-v2"])  # for tokenizing ...
-
-
-
-    parser.add_argument("--init_model", type=str, default="bert-base-uncased",
+    parser.add_argument("--hidden_size", type=int, default=512, choices=[768, 512, 128])
+    parser.add_argument("--bert_model", type=str, default="bert-base-uncased",
+                        choices=["bert-base-uncased", "BlueBERT",
+                                 "albert-base-v2", "Bio_clinical_bert",
+                                 "bert_tiny"])  # for tokenizing ...
+    parser.add_argument("--init_model", type=str, default="google/bert_uncased_L-4_H-512_A-8",
                         choices=["bert-base-uncased", "BlueBERT", "albert-base-v2",
                                  "google/bert_uncased_L-4_H-512_A-8", "google/bert_uncased_L-2_H-128_A-2"])
-    parser.add_argument("--embedding_size", type=int, default=768, choices=[768, 512, 128])
-    parser.add_argument("--hidden_size", type=int, default=768, choices=[768, 512, 128])
-
-
 
     parser.add_argument("--max_seq_len", type=int, default=512, help="maximum sequence len")
     parser.add_argument("--vocab_size", type=int, default=30522, choices=[30522, 30000])
+    parser.add_argument("--embedding_size", type=int, default=512, choices=[768, 512, 128])
+
 
     parser.add_argument("--img_hidden_sz", type=int, default=2048)
     parser.add_argument("--img_embed_pool_type", type=str, default="max", choices=["max", "avg"])
