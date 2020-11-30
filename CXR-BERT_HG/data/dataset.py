@@ -10,7 +10,7 @@ from fuzzywuzzy import fuzz
 
 import torch
 from torch.utils.data import Dataset
-from transformers import BertModel, BertTokenizer
+from transformers import BertModel, BertTokenizer, AutoTokenizer
 from transformers.tokenization_albert import AlbertTokenizer
 
 
@@ -23,25 +23,35 @@ def truncate_img_txt(num_image_embeds, txt_tokens, max_seq_len):
             txt_tokens.pop()
 
 
-class CXRDataset(Dataset):  # for both MLM and ITM
+class CXRDataset(Dataset):
     def __init__(self, data_path, tokenizer, transforms, args):
         self.args = args
         self.data_dir = os.path.dirname(data_path)
         self.data = [json.loads(l) for l in open(data_path)]
 
         self.max_seq_len = args.max_seq_len  # 512
-        self.max_seq_len -= args.num_image_embeds  # 512 - 100(#img_embeds)
+        self.max_seq_len -= args.num_image_embeds  # 512 - #img_embeds
         self.transforms = transforms
 
         self.tokenizer = tokenizer  # tokenizer = BertTokenizer.from_pretrained('bert-based-uncased').tokenize
 
         if args.bert_model == "albert-base-v2":
-            self.albert_tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2')
+            self.albert_tokenizer = AlbertTokenizer.from_pretrained(args.bert_model)
             self.vocab_stoi = self.albert_tokenizer.get_vocab()  # <unk>, <pad>
             self.vocab_len = len(self.vocab_stoi)  # 30000
 
-        elif self.args.bert_model == 'bert-base-uncased':
-            self.BertTokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        elif args.bert_model == "emilyalsentzer/Bio_ClinicalBERT":
+            self.BertTokenizer = AutoTokenizer.from_pretrained(args.bert_model)
+            self.vocab_stoi = self.BertTokenizer.vocab
+            self.vocab_len = len(self.vocab_stoi)  # 28996
+
+        elif args.bert_model == "bionlp/bluebert_pubmed_mimic_uncased_L-12_H-768_A-12":
+            self.BertTokenizer = AutoTokenizer.from_pretrained(args.bert_model)
+            self.vocab_stoi = self.BertTokenizer.vocab
+            self.vocab_len = len(self.vocab_stoi)  # 30522
+
+        else:  # BERT-base, small, tiny
+            self.BertTokenizer = BertTokenizer.from_pretrained(args.bert_model)
             self.vocab_stoi = self.BertTokenizer.vocab
             self.vocab_len = len(self.vocab_stoi)  # 30522
 
@@ -52,11 +62,13 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         # MLM
         origin_txt, img_path, is_aligned = self.random_pair_sampling(idx)
 
-        # image = Image.open(os.path.join(self.data_dir, self.data[idx]['img']))  #.convert("RGB")
-        image = Image.open(os.path.join(self.data_dir, img_path))  # .convert("RGB")
+        if self.args.img_channel == 3:
+            image = Image.open(os.path.join(self.data_dir, img_path))
+        elif self.args.img_channel == 1:
+            image = Image.open(os.path.join(self.data_dir, img_path)).convert("RGB")
+
         image = self.transforms(image)
 
-        # tokenized_sentence = self.tokenizer(self.data[idx]['text'])  # ['i','ate','an','apple'], no special token
         tokenized_sentence = self.tokenizer(origin_txt)  # ['i','ate','an','apple'], no special token
 
         truncate_img_txt(self.args.num_image_embeds, tokenized_sentence, self.args.max_seq_len)
@@ -64,7 +76,7 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         if self.args.bert_model == "albert-base-v2":
             encoded_sentence = [self.vocab_stoi[w] if w in self.vocab_stoi else self.vocab_stoi["<unk>"]
                                 for w in tokenized_sentence]
-        elif self.args.bert_model == 'bert-base-uncased':
+        else:
             encoded_sentence = [self.vocab_stoi[w] if w in self.vocab_stoi else self.vocab_stoi["[UNK]"]
                                 for w in tokenized_sentence]  # [178, 8756, 1126, 12075]
 
@@ -79,10 +91,10 @@ class CXRDataset(Dataset):  # for both MLM and ITM
 
         if self.args.bert_model == "albert-base-v2":
             padding = [self.vocab_stoi["<pad>"] for _ in range(self.max_seq_len - len(input_ids) - 1)]  # [CLS]
-        elif self.args.bert_model == 'bert-base-uncased':
-            padding = [self.vocab_stoi["[PAD]"] for _ in range(self.max_seq_len - len(input_ids) - 1)]  # [CLS]
+        else:
+            padding = [self.vocab_stoi["[PAD]"] for _ in range(self.max_seq_len - len(input_ids) - 1)]  # 0, [CLS]
             label_padding = [-100 for _ in range(self.max_seq_len - len(input_ids) - 1)]  # [CLS]
-        # TODO: padding set to 0(origin) or -100(for ignored in loss computing)
+        # TODO: padding set to 0(origin) or -100(ignored in loss computing)
         input_ids.extend(padding)
         attn_masks_t.extend(padding)
         txt_labels_t.extend(label_padding)
@@ -98,16 +110,7 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         txt_labels = torch.tensor(txt_labels)
         attn_masks = torch.tensor(attn_masks)
         segment = torch.tensor(segment)
-
-        # ITM
-        # TODO: ITM negative sample
-        # txt_itm, _, is_aligned = self.random_pair_sampling(idx)
-        # input_ids_ITM = self.BertTokenizer(txt_itm, padding='max_length', max_length=self.max_seq_len)['input_ids']
-        input_ids_ITM = [self.vocab_stoi["[SEP]"]] + encoded_sentence + [self.vocab_stoi["[SEP]"]]
-        input_ids_ITM.extend(padding)
-
         is_aligned = torch.tensor(is_aligned)
-        input_ids_ITM = torch.tensor(input_ids_ITM)
 
         # through the collate_fn, mmbt return: txt, segment, mask, img, tgt = batch
         """
@@ -134,8 +137,7 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         # print('segment:', segment.size())
         # print('is_aligned:', is_aligned)
         # print('input_ids_ITM:', input_ids_ITM.size())
-
-        return cls_tok, input_ids, txt_labels, attn_masks, image, segment, is_aligned, input_ids_ITM
+        return cls_tok, input_ids, txt_labels, attn_masks, image, segment, is_aligned
 
     def random_word(self, tokens):
         output_label = []
@@ -153,9 +155,6 @@ class CXRDataset(Dataset):  # for both MLM and ITM
                 elif prob < 0.9:
                     tokens[i] = random.randrange(self.vocab_len)
 
-                # 10% randomly change token to current token
-                # else:
-                #     tokens[i] = token
                 output_label.append(token)
             else:
                 tokens[i] = token
@@ -169,8 +168,8 @@ class CXRDataset(Dataset):  # for both MLM and ITM
         return tokens, output_label
 
     def random_pair_sampling(self, idx):
-        _, txt, img = self.data[idx].keys()  # id, label, txt, img
-        # _, _, _, txt, img = self.data[idx].keys()
+        _, txt, img = self.data[idx].keys()  # id, txt, img
+        # _, _, txt, img = self.data[idx].keys()  # id, label, txt, img
 
         d_txt = self.data[idx][txt]
         d_img = self.data[idx][img]
