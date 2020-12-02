@@ -53,20 +53,31 @@ class CXRBertEncoder(nn.Module):  # MultimodalBertEncoder, BERT
         self.encoder = self.bert.encoder
         self.pooler = self.bert.pooler
 
+    def get_extended_attention_mask(self, attention_mask):
+        if attention_mask.dim() == 2:
+            extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)  # [bsz, 1, 1, 356], origin bert
+        elif attention_mask.dim() == 3:
+            extended_attention_mask = attention_mask.unsqueeze(1)  # [bsz, 1 , 356, 356], added s2s,bi
+        else:
+            raise NotImplementedError
+
+        # extended_attn_mask = extended_attn_mask.to(dtype=next(self.parameters()).dtype)  # fp16 compatibility
+        extended_attention_mask = extended_attention_mask.to(dtype=torch.float16)
+        extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
+
+        return extended_attention_mask
+
     def forward(self, cls_tok, input_txt, attn_mask, segment, input_img):
 
-        extended_attn_mask = attn_mask.unsqueeze(1).unsqueeze(2)  # (bsz, 1, 1, len(attn_mask))
-        # extended_attn_mask = extended_attn_mask.to(dtype=next(self.parameters()).dtype)  # fp16 compatibility
-        extended_attn_mask = extended_attn_mask.to(dtype=torch.float16)  # fp16 compatibility
-        extended_attn_mask = (1.0 - extended_attn_mask) * -10000.0
+        extended_attn_mask = self.get_extended_attention_mask(attn_mask)
 
         if self.args.cuda_devices == [1]:
             cuda = torch.device('cuda:1')
-            img_tok = (torch.LongTensor(input_txt.size(0), (self.args.num_image_embeds)).fill_(0)).to(device=cuda)
+            img_tok = (torch.LongTensor(input_txt.size(0), self.args.num_image_embeds).fill_(0)).to(device=cuda)
             cls_segment = (torch.LongTensor(input_txt.size(0), 1).fill_(0)).to(device=cuda)
 
         else:
-            img_tok = (torch.LongTensor(input_txt.size(0), (self.args.num_image_embeds)).fill_(0).cuda())
+            img_tok = (torch.LongTensor(input_txt.size(0), self.args.num_image_embeds).fill_(0).cuda())
             cls_segment = (torch.LongTensor(input_txt.size(0), 1).fill_(0).cuda())
 
         cls_out = self.txt_embeddings(cls_tok, cls_segment)

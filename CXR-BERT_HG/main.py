@@ -13,6 +13,7 @@ Default setting for training CXR-BERT
     5. init with AlBERT
 
 """
+import os
 import wandb
 import argparse
 from datetime import datetime
@@ -27,9 +28,12 @@ from models.train import CXRBERT_Trainer  # CXR-BERT
 
 from transformers import BertTokenizer, AlbertTokenizer, AutoTokenizer
 
+# s2s
+from data.dataset import Preprocess4Seq2seq
+
 def train(args):
     wandb.init(config=args, project='CXR-BERT')
-
+    print(" # PID :", os.getpid())
     set_seed(args.seed)
 
     # TODO: bert-base,small,tiny tokenizer
@@ -44,17 +48,43 @@ def train(args):
 
     transforms = get_transforms()
 
+    # tokenizer, transforms, mode=None, seq_len, num_image_embeds, new_segment_ids, bert_model
+    bi_uni_pipeline = [Preprocess4Seq2seq(tokenizer, transforms, mode="s2s",
+                                          seq_len=args.seq_len,
+                                          num_image_embeds=args.num_image_embeds,
+                                          new_segment_ids=args.new_segment_ids, bert_model=args.bert_model),
+
+                       Preprocess4Seq2seq(tokenizer, transforms, mode="bi",
+                                          seq_len=args.seq_len,
+                                          num_image_embeds=args.num_image_embeds,
+                                          new_segment_ids=args.new_segment_ids, bert_model=args.bert_model)]
+
     print("Load Train dataset", args.train_dataset)
-    train_dataset = CXRDataset(args.train_dataset, tokenizer, transforms, args)
+    train_dataset = CXRDataset(args.train_dataset, tokenizer, bi_uni_pipeline=bi_uni_pipeline,
+                               batch_size=args.batch_size, s2s_prob=args.s2s_prob, bi_prob=args.bi_prob)
 
     print("Load Test dataset", args.test_dataset)
-    test_dataset = CXRDataset(args.test_dataset, tokenizer, transforms, args) \
+    test_dataset = CXRDataset(args.test_dataset, tokenizer, bi_uni_pipeline=bi_uni_pipeline,
+                              batch_size=args.batch_size, s2s_prob=args.s2s_prob, bi_prob=args.bi_prob) \
         if args.test_dataset is not None else None
 
     print("Create DataLoader")
-    train_data_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=True)
+    train_data_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers,
+                                   shuffle=True)
     test_data_loader = DataLoader(test_dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=True) \
         if test_dataset is not None else None
+
+    # print("Load Train dataset", args.train_dataset)
+    # train_dataset = CXRDataset(args.train_dataset, tokenizer, transforms, args)
+    #
+    # print("Load Test dataset", args.test_dataset)
+    # test_dataset = CXRDataset(args.test_dataset, tokenizer, transforms, args) \
+    #     if args.test_dataset is not None else None
+    #
+    # print("Create DataLoader")
+    # train_data_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=True)
+    # test_data_loader = DataLoader(test_dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=True) \
+    #     if test_dataset is not None else None
 
     print("Building CXRBERT model")
     # TODO: Remove after check, CXRBERT or CXRBertEncoder... ?
@@ -86,11 +116,11 @@ if __name__ == '__main__':
 
     parser.add_argument("--log_freq", type=int, default=10, help="printing loss every n inter: setting n")
     parser.add_argument("--with_cuda", type=bool, default=True, help="training with CUDA: True or False")
-    parser.add_argument("--cuda_devices", type=int, default=[0], help="CUDA device ids")
+    parser.add_argument("--cuda_devices", type=int, default=[1], help="CUDA device ids")
     # parser.add_argument("--cuda_devices", type=int, nargs='+', default=None, help="CUDA device ids")
 
     parser.add_argument("--epochs", type=int, default=50, help='number of epochs')
-    parser.add_argument("--batch_size", type=int, default=8, help="number of batch size")
+    parser.add_argument("--batch_size", type=int, default=16, help="number of batch size")
     parser.add_argument("--num_workers", type=int, default=2, help="dataloader worker size")
 
     parser.add_argument("--lr", type=float, default=1e-5)
@@ -107,6 +137,18 @@ if __name__ == '__main__':
     parser.add_argument("--eps", type=float, default=1e-6, help="adams epsilon")
     parser.add_argument("--weight_decay", type=float, default=0.01, help="weight_decay of adam")  # 0.01 , AdamW
 
+    # TODO: s2s
+    parser.add_argument("--new_segment_ids", default=False, action='store_true',
+                        help="Use new segment ids for bi-uni-directional LM.")
+    parser.add_argument("--from_scratch", type=str, default=False,
+                        help="The model will be trained from scratch!!: True or False")
+    parser.add_argument("--mode", type=str, default='ori', help='s2s | bi | ori: attn 2dim')
+    parser.add_argument('--s2s_prob', default=0.5, type=float,
+                        help="Percentage of examples that are bi-uni-directional LM (seq2seq). "
+                             "This must be turned off!!!!!!! because this is not for seq2seq model!!!")
+    parser.add_argument('--bi_prob', default=0.5, type=float,
+                        help="Percentage of examples that are bidirectional LM.")
+
     # TODO: init model
     parser.add_argument("--hidden_size", type=int, default=512, choices=[768, 512, 128])
     parser.add_argument("--embedding_size", type=int, default=512, choices=[768, 512, 128])
@@ -115,21 +157,22 @@ if __name__ == '__main__':
                                  "bert-base-uncased",
                                  "google/bert_uncased_L-4_H-512_A-8",  # BERT-Small
                                  "google/bert_uncased_L-2_H-128_A-2",  # BERT-Tiny
-                                 "emilyalsentzer/Bio_ClinicalBERT",  # Clinical-BERT
+                                 "emilyalsentzer/Bio_ClinicalBERT",    # Clinical-BERT
                                  "bionlp/bluebert_pubmed_mimic_uncased_L-12_H-768_A-12"])  # BlueBERT
 
     parser.add_argument("--vocab_size", type=int, default=30522, choices=[30522, 30000])
-    parser.add_argument("--max_seq_len", type=int, default=512, help="maximum sequence len")
+    parser.add_argument("--max_seq_len", type=int, default=512, help="maximum model len")
+    # TODO: seq_len, need to be fixed regardless of num_img_embeds
+    parser.add_argument("--seq_len", type=int, default=253, help="sequence len")
 
 
     parser.add_argument("--img_hidden_sz", type=int, default=2048)
-    parser.add_argument("--num_image_embeds", type=int, default=256, choices=[100, 256])
-    parser.add_argument("--img_encoder", type=str, default='ViT',
+    parser.add_argument("--num_image_embeds", type=int, default=100, choices=[100, 256])
+    parser.add_argument("--img_encoder", type=str, default='random-pixel',
                         choices=['random-pixel', 'full-fiber', 'ViT'])
     parser.add_argument("--img_channel", type=int, default=3, choices=[1, 3])
     parser.add_argument("--img_size", type=int, default=512, choices=[256, 512])
     parser.add_argument("--img_embed_pool_type", type=str, default="max", choices=["max", "avg"])
-
     #-------------------------------------------------------------------------------------------
     # TODO: ...!
     parser.add_argument("--gradient_accumulation_steps", type=int, default=24)  # loss, optimizer.step() slowly
