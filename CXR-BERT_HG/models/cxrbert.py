@@ -4,7 +4,7 @@ import torch.nn as nn
 from models.image import ImageEncoder_cnn, ImageEncoder_pool, Img_patch_embedding
 
 from transformers.modeling_auto import AutoModel
-from transformers.modeling_bert import BertModel, BertForMaskedLM
+from transformers.modeling_bert import BertConfig, BertModel, BertForMaskedLM, BertPreTrainedModel
 from transformers.modeling_albert import AlbertModel
 from transformers.modeling_utils import PreTrainedModel
 
@@ -25,9 +25,9 @@ class ImageBertEmbeddings(nn.Module):
         embeddings = self.dropout(embeddings)  # bsz, num_img_embeds, hidden_sz
         return embeddings
 
-class CXRBertEncoder(nn.Module):  # MultimodalBertEncoder, BERT
-    def __init__(self, args):
-        super().__init__()
+class CXRBertEncoder(BertPreTrainedModel):  # MultimodalBertEncoder, BERT
+    def __init__(self, config, args):
+        super().__init__(config)
         self.args = args
 
         if args.bert_model == "albert-base-v2":
@@ -36,6 +36,9 @@ class CXRBertEncoder(nn.Module):  # MultimodalBertEncoder, BERT
             bert = AutoModel.from_pretrained(args.bert_model)
         elif args.bert_model == "bionlp/bluebert_pubmed_mimic_uncased_L-12_H-768_A-12":
             bert = AutoModel.from_pretrained(args.bert_model)
+        elif args.bert_model == "bert-small-scratch":
+            config = BertConfig.from_pretrained("google/bert_uncased_L-4_H-512_A-8")
+            bert = BertModel(config)
         else:
             bert = BertModel.from_pretrained(args.bert_model)  # bert-base-uncased, small, tiny
 
@@ -89,34 +92,35 @@ class CXRBertEncoder(nn.Module):  # MultimodalBertEncoder, BERT
         encoded_layers = self.encoder(
             encoder_input, extended_attn_mask, output_hidden_states=False
         )  # torch.Size([16, 512, 768]), torch.Size([16, 1, 1, 512])
-        return encoded_layers[-1]  # bsz, max_len, hsz, encoded_layers[0]
+        # return encoded_layers[-1]  # bsz, max_len, hsz, encoded_layers[0]
+        return encoded_layers[-1], self.pooler(encoded_layers[-1])
 
-class CXRBERT(PreTrainedModel):  # BERTLM, MultimodalBertClf
+class CXRBERT(BertPreTrainedModel):  # BERTLM, MultimodalBertClf
     """
     Multimodal BERT
     : Masked Language Model + Image Text Matching
     """
     def __init__(self, config, args):
         super().__init__(config)
-        self.enc = CXRBertEncoder(args)
-        self.mlm = MaskedLanguageModel(args, args.hidden_size, args.vocab_size)
+        self.enc = CXRBertEncoder(config, args)
+        self.mlm = MaskedLanguageModel(config, args, args.hidden_size, args.vocab_size)
         self.itm = ImageTextMatching(args.hidden_size)
 
-        self.bertformlm = BertForMaskedLM.from_pretrained(args.bert_model).cls
+        # self.bertformlm = BertForMaskedLM.from_pretrained(args.bert_model).cls
 
     def forward(self, cls_tok, input_txt, attn_mask, segment, input_img):
-        x = self.enc(cls_tok, input_txt, attn_mask, segment, input_img)  # bsz, max_len, hidden
-        return self.mlm(x), self.itm(x)
+        x_mlm, x_itm = self.enc(cls_tok, input_txt, attn_mask, segment, input_img)  # bsz, max_len, hidden
+        return self.mlm(x_mlm), self.itm(x_itm)
         # return self.bertformlm(x), self.itm(x)
 
 class MaskedLanguageModel(nn.Module):
     """
     (vocab_size) classification model
     """
-    def __init__(self, args, hidden, vocab_size):
+    def __init__(self, config, args, hidden, vocab_size):
         super().__init__()
         self.linear = nn.Linear(hidden, vocab_size)
-        self.linear.weight = CXRBertEncoder(args).txt_embeddings.word_embeddings.weight
+        self.linear.weight = CXRBertEncoder(config, args).txt_embeddings.word_embeddings.weight
         self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, x):
@@ -132,4 +136,5 @@ class ImageTextMatching(nn.Module):
         self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, x):
-        return self.linear(x[:, 0])  # [CLS], x_size: [bsz, max_len, hsz] -> [bsz, hsz], return [bsz, 2]
+        # return self.linear(x[:, 0])  # [CLS], x_size: [bsz, max_len, hsz] -> [bsz, hsz], return [bsz, 2]
+        return self.linear(x)

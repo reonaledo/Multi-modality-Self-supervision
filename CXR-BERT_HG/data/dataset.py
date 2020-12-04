@@ -171,6 +171,11 @@ class Preprocess4Seq2seq(Pipeline):
             self.vocab_stoi = self.BertTokenizer.vocab
             self.vocab_len = len(self.vocab_stoi)  # 30522
 
+        elif bert_model == "bert-small-scratch":
+            self.BertTokenizer = BertTokenizer.from_pretrained("google/bert_uncased_L-4_H-512_A-8")
+            self.vocab_stoi = self.BertTokenizer.vocab
+            self.vocab_len = len(self.vocab_stoi)  # 30522
+
         else:  # BERT-base, small, tiny
             self.BertTokenizer = BertTokenizer.from_pretrained(bert_model)
             self.vocab_stoi = self.BertTokenizer.vocab

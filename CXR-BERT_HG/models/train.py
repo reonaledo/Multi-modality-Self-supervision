@@ -1,5 +1,5 @@
 """
-Construct CXR-BERT or BertForMaskedLM, Training and Saving
+
 """
 import os
 import tqdm
@@ -12,6 +12,7 @@ import torch.nn as nn
 import torch.cuda.amp as amp
 
 from models.cxrbert import CXRBERT
+# from models.cxrbert_origin import CXRBERT
 from models.optim_schedule import ScheduledOptim
 
 from transformers.optimization import AdamW
@@ -19,7 +20,7 @@ from transformers import BertConfig, AlbertConfig, AutoConfig
 from transformers.modeling_bert import BertForMaskedLM
 
 class CXRBERT_Trainer():
-    def __init__(self, args, bert, train_dataloader, test_dataloader=None):
+    def __init__(self, args, train_dataloader, test_dataloader=None):
         self.args = args
 
         cuda_condition = torch.cuda.is_available() and args.with_cuda
@@ -30,7 +31,7 @@ class CXRBERT_Trainer():
             self.device = torch.device("cuda:0" if cuda_condition else "cpu")
 
         # TODO: remove after check
-        self.bert = bert  # CXRBertEncoder
+        # self.bert = bert  # CXRBertEncoder
 
         if args.bert_model == "albert-base-v2":
             config = AlbertConfig.from_pretrained(args.bert_model)
@@ -38,6 +39,8 @@ class CXRBERT_Trainer():
             config = AutoConfig.from_pretrained(args.bert_model)
         elif args.bert_model == "bionlp/bluebert_pubmed_mimic_uncased_L-12_H-768_A-12":
             config = AutoConfig.from_pretrained(args.bert_model)
+        elif args.bert_model == "bert-small-scratch":
+            config = BertConfig.from_pretrained("google/bert_uncased_L-4_H-512_A-8")
         else:
             config = BertConfig.from_pretrained(args.bert_model)  # bert-base, small, tiny
 

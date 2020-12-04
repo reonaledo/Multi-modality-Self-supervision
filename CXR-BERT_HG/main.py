@@ -43,6 +43,8 @@ def train(args):
         tokenizer = AutoTokenizer.from_pretrained(args.bert_model).tokenize
     elif args.bert_model == "bionlp/bluebert_pubmed_mimic_uncased_L-12_H-768_A-12":
         tokenizer = AutoTokenizer.from_pretrained(args.bert_model).tokenize
+    elif args.bert_model == "bert-small-scratch":
+        tokenizer = BertTokenizer.from_pretrained("google/bert_uncased_L-4_H-512_A-8", do_lower_case=True).tokenize
     else:
         tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=True).tokenize
 
@@ -88,10 +90,10 @@ def train(args):
 
     print("Building CXRBERT model")
     # TODO: Remove after check, CXRBERT or CXRBertEncoder... ?
-    cxr_bert = CXRBertEncoder(args)
+    # cxr_bert = CXRBertEncoder(args)
 
     print("Creating BERT Trainer")
-    trainer = CXRBERT_Trainer(args, cxr_bert, train_dataloader=train_data_loader, test_dataloader=test_data_loader)
+    trainer = CXRBERT_Trainer(args, train_dataloader=train_data_loader, test_dataloader=test_data_loader)
 
     print("Training Start!")
     for epoch in range(args.epochs):
@@ -106,7 +108,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--train_dataset", type=str, default='/home/ubuntu/HG/cxr-bert/dset/img_512/cxr_train.json',
                         help="train dataset for training")
-    parser.add_argument("--test_dataset", type=str, default=None,
+    parser.add_argument("--test_dataset", type=str, default='/home/ubuntu/HG/cxr-bert/dset/img_512/cxr_valid.json',
                         help='test dataset for evaluate train set')
 
     output_path = 'output/' + str(datetime.now())
@@ -120,7 +122,7 @@ if __name__ == '__main__':
     # parser.add_argument("--cuda_devices", type=int, nargs='+', default=None, help="CUDA device ids")
 
     parser.add_argument("--epochs", type=int, default=50, help='number of epochs')
-    parser.add_argument("--batch_size", type=int, default=16, help="number of batch size")
+    parser.add_argument("--batch_size", type=int, default=32, help="number of batch size")
     parser.add_argument("--num_workers", type=int, default=2, help="dataloader worker size")
 
     parser.add_argument("--lr", type=float, default=1e-5)
@@ -142,7 +144,7 @@ if __name__ == '__main__':
                         help="Use new segment ids for bi-uni-directional LM.")
     parser.add_argument("--from_scratch", type=str, default=False,
                         help="The model will be trained from scratch!!: True or False")
-    parser.add_argument("--mode", type=str, default='ori', help='s2s | bi | ori: attn 2dim')
+    parser.add_argument("--mode", type=str, default='s2s', help='s2s | bi | ori: attn 2dim')
     parser.add_argument('--s2s_prob', default=0.5, type=float,
                         help="Percentage of examples that are bi-uni-directional LM (seq2seq). "
                              "This must be turned off!!!!!!! because this is not for seq2seq model!!!")
@@ -152,19 +154,19 @@ if __name__ == '__main__':
     # TODO: init model
     parser.add_argument("--hidden_size", type=int, default=512, choices=[768, 512, 128])
     parser.add_argument("--embedding_size", type=int, default=512, choices=[768, 512, 128])
-    parser.add_argument("--bert_model", type=str, default="google/bert_uncased_L-4_H-512_A-8",
+    parser.add_argument("--bert_model", type=str, default="bert-small-scratch",
                         choices=["albert-base-v2",
                                  "bert-base-uncased",
                                  "google/bert_uncased_L-4_H-512_A-8",  # BERT-Small
                                  "google/bert_uncased_L-2_H-128_A-2",  # BERT-Tiny
                                  "emilyalsentzer/Bio_ClinicalBERT",    # Clinical-BERT
-                                 "bionlp/bluebert_pubmed_mimic_uncased_L-12_H-768_A-12"])  # BlueBERT
+                                 "bionlp/bluebert_pubmed_mimic_uncased_L-12_H-768_A-12",  # BlueBERT
+                                 "bert-small-scratch"]) # BERT-small-scratch
 
     parser.add_argument("--vocab_size", type=int, default=30522, choices=[30522, 30000])
     parser.add_argument("--max_seq_len", type=int, default=512, help="maximum model len")
     # TODO: seq_len, need to be fixed regardless of num_img_embeds
     parser.add_argument("--seq_len", type=int, default=253, help="sequence len")
-
 
     parser.add_argument("--img_hidden_sz", type=int, default=2048)
     parser.add_argument("--num_image_embeds", type=int, default=100, choices=[100, 256])
