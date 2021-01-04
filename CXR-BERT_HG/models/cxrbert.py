@@ -3,10 +3,71 @@ import torch.nn as nn
 
 from models.image import ImageEncoder_cnn, ImageEncoder_pool, Img_patch_embedding
 
-from transformers.modeling_auto import AutoModel
+from transformers.modeling_auto import AutoConfig, AutoModel
 from transformers.modeling_bert import BertConfig, BertModel, BertForMaskedLM, BertPreTrainedModel
 from transformers.modeling_albert import AlbertModel
 from transformers.modeling_utils import PreTrainedModel
+from transformers.modeling_lxmert import LxmertForPreTraining
+from transformers.configuration_utils import PretrainedConfig
+
+class CXRConfig(PretrainedConfig):
+    model_type = "cxrbert"
+
+    def __init__(
+        self,
+        vocab_size=30522,
+        hidden_size=512,
+        num_hidden_layers=4,
+        num_attention_heads=8,
+        intermediate_size=2048,
+        hidden_act="gelu",
+        hidden_dropout_prob=0.1,
+        attention_probs_dropout_prob=0.1,
+        max_position_embeddings=512,
+        type_vocab_size=2,
+        initializer_range=0.02,
+        layer_norm_eps=1e-12,
+        pad_token_id=0,
+        gradient_checkpointing=False,
+        **kwargs
+    ):
+        super().__init__(pad_token_id=pad_token_id, **kwargs)
+
+        self.vocab_size = vocab_size
+        self.hidden_size = hidden_size
+        self.num_hidden_layers = num_hidden_layers
+        self.num_attention_heads = num_attention_heads
+        self.hidden_act = hidden_act
+        self.intermediate_size = intermediate_size
+        self.hidden_dropout_prob = hidden_dropout_prob
+        self.attention_probs_dropout_prob = attention_probs_dropout_prob
+        self.max_position_embeddings = max_position_embeddings
+        self.type_vocab_size = type_vocab_size
+        self.initializer_range = initializer_range
+        self.layer_norm_eps = layer_norm_eps
+        self.gradient_checkpointing = gradient_checkpointing
+
+class CXRPreTrainedModel(PreTrainedModel):
+    """An abstract class to handle weights initialization and
+    a simple interface for downloading and loading pretrained models.
+    """
+
+    config_class = CXRConfig
+    # load_tf_weights = load_tf_weights_in_bert
+    base_model_prefix = "cxrbert"
+    authorized_missing_keys = [r"position_ids"]
+
+    def _init_weights(self, module):
+        """ Initialize the weights """
+        if isinstance(module, (nn.Linear, nn.Embedding)):
+            # Slightly different from the TF version which uses truncated_normal for initialization
+            # cf https://github.com/pytorch/pytorch/pull/5617
+            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+        elif isinstance(module, nn.LayerNorm):
+            module.bias.data.zero_()
+            module.weight.data.fill_(1.0)
+        if isinstance(module, nn.Linear) and module.bias is not None:
+            module.bias.data.zero_()
 
 class ImageBertEmbeddings(nn.Module):
     def __init__(self, args, embeddings):
@@ -16,16 +77,25 @@ class ImageBertEmbeddings(nn.Module):
         self.token_type_embeddings = embeddings.token_type_embeddings
         self.LayerNorm = embeddings.LayerNorm
         self.dropout = nn.Dropout(args.dropout_prob)
+        self.position_embeddings = embeddings.position_embeddings
 
-    def forward(self, input_imgs, token_type_ids):  # img_embed_out = self.img_embeddings(img, img_tok)
+    def forward(self, input_imgs, img_pos, token_type_ids):  # img_embed_out = self.img_embeddings(img, img_tok)
+
         imgs_embeddings = self.img_embeddings(input_imgs)
         token_type_embeddings = self.token_type_embeddings(token_type_ids)
-        embeddings = imgs_embeddings + token_type_embeddings
+
+        if self.args.img_postion:
+            position_embeddings = self.position_embeddings(img_pos)
+            embeddings = imgs_embeddings + position_embeddings +token_type_embeddings
+        else:
+            embeddings = imgs_embeddings + token_type_embeddings
+
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)  # bsz, num_img_embeds, hidden_sz
         return embeddings
 
-class CXRBertEncoder(BertPreTrainedModel):  # MultimodalBertEncoder, BERT
+# class CXRBertEncoder(nn.Module):  # MultimodalBertEncoder, BERT
+class CXRBertEncoder(BertPreTrainedModel):
     def __init__(self, config, args):
         super().__init__(config)
         self.args = args
@@ -42,8 +112,7 @@ class CXRBertEncoder(BertPreTrainedModel):  # MultimodalBertEncoder, BERT
         else:
             bert = BertModel.from_pretrained(args.bert_model)  # bert-base-uncased, small, tiny
 
-        self.bert = bert
-        self.txt_embeddings = self.bert.embeddings
+        self.txt_embeddings = bert.embeddings
         self.img_embeddings = ImageBertEmbeddings(args, self.txt_embeddings)
 
         if args.img_encoder == 'ViT':
@@ -53,42 +122,55 @@ class CXRBertEncoder(BertPreTrainedModel):  # MultimodalBertEncoder, BERT
         else:
             self.img_encoder = ImageEncoder_cnn(args)
 
-        self.encoder = self.bert.encoder
-        self.pooler = self.bert.pooler
+        self.encoder = bert.encoder
+        self.pooler = bert.pooler
 
-    def get_extended_attention_mask(self, attention_mask):
-        if attention_mask.dim() == 2:
-            extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)  # [bsz, 1, 1, 356], origin bert
-        elif attention_mask.dim() == 3:
-            extended_attention_mask = attention_mask.unsqueeze(1)  # [bsz, 1 , 356, 356], added s2s,bi
+        # print('img_enc_weight:', self.img_encoder.state_dict())
+
+    def get_extended_attn_mask(self, attn_mask):
+        if attn_mask.dim() == 2:
+            # print('attn_mask.dim():', attn_mask.dim())
+            extended_attn_mask = attn_mask.unsqueeze(1).unsqueeze(2)
+        elif attn_mask.dim() == 3:
+            # print('attn_mask.dim():', attn_mask.dim())
+            extended_attn_mask = attn_mask.unsqueeze(1)
         else:
             raise NotImplementedError
+        extended_attn_mask = extended_attn_mask.to(dtype=torch.float16)
+        extended_attn_mask = (1.0 - extended_attn_mask) * - 10000.0
 
-        # extended_attn_mask = extended_attn_mask.to(dtype=next(self.parameters()).dtype)  # fp16 compatibility
-        extended_attention_mask = extended_attention_mask.to(dtype=torch.float16)
-        extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
+        return extended_attn_mask
 
-        return extended_attention_mask
+    def forward(self, cls_tok, input_txt, attn_mask, segment, input_img, sep_tok):
 
-    def forward(self, cls_tok, input_txt, attn_mask, segment, input_img):
+        # extended_attn_mask = attn_mask.unsqueeze(1).unsqueeze(2)  # (bsz, 1, 1, len(attn_mask))
+        # # extended_attn_mask = extended_attn_mask.to(dtype=next(self.parameters()).dtype)  # fp16 compatibility
+        # extended_attn_mask = extended_attn_mask.to(dtype=torch.float16)  # fp16 compatibility
+        # extended_attn_mask = (1.0 - extended_attn_mask) * -10000.0
 
-        extended_attn_mask = self.get_extended_attention_mask(attn_mask)
+        extended_attn_mask = self.get_extended_attn_mask(attn_mask)
 
-        if self.args.cuda_devices == [1]:
-            cuda = torch.device('cuda:1')
-            img_tok = (torch.LongTensor(input_txt.size(0), self.args.num_image_embeds).fill_(0)).to(device=cuda)
-            cls_segment = (torch.LongTensor(input_txt.size(0), 1).fill_(0)).to(device=cuda)
+        # if self.args.cuda_devices == [1]:
+        #     cuda = torch.device('cuda:1')
+        #     img_tok = (torch.LongTensor(input_txt.size(0), self.args.num_image_embeds).fill_(0)).to(device=cuda)
+        #     cls_segment = (torch.LongTensor(input_txt.size(0), 1).fill_(0)).to(device=cuda)
+        #
+        # else:
+        #     img_tok = (torch.LongTensor(input_txt.size(0), self.args.num_image_embeds).fill_(0).cuda())
+        #     cls_segment = (torch.LongTensor(input_txt.size(0), 1).fill_(0).cuda())
 
-        else:
-            img_tok = (torch.LongTensor(input_txt.size(0), self.args.num_image_embeds).fill_(0).cuda())
-            cls_segment = (torch.LongTensor(input_txt.size(0), 1).fill_(0).cuda())
+        img_tok = (torch.LongTensor(input_txt.size(0), self.args.num_image_embeds).fill_(0).cuda())
+
+        cls_segment = (torch.LongTensor(input_txt.size(0), 1).fill_(0).cuda())
 
         cls_out = self.txt_embeddings(cls_tok, cls_segment)
+        sep_out = self.txt_embeddings(sep_tok, cls_segment)
 
-        img = self.img_encoder(input_img)  # BxNx2048
-        img_embed_out = self.img_embeddings(img, img_tok)  # bsz, num_img_embeds, hsz
+        img, position = self.img_encoder(input_img)  # BxNx2048
+
+        img_embed_out = self.img_embeddings(img, position, img_tok)  # bsz, num_img_embeds, hsz
         txt_embed_out = self.txt_embeddings(input_txt, segment)  # bsz, seq_len, hsz. inputs: bsz, seq_len
-        encoder_input = torch.cat([cls_out, img_embed_out, txt_embed_out], 1)  # B x (TXT + IMG) x HID
+        encoder_input = torch.cat([cls_out, img_embed_out, sep_out, txt_embed_out], 1)  # B x (TXT + IMG) x HID
         encoded_layers = self.encoder(
             encoder_input, extended_attn_mask, output_hidden_states=False
         )  # torch.Size([16, 512, 768]), torch.Size([16, 1, 1, 512])
@@ -108,8 +190,9 @@ class CXRBERT(BertPreTrainedModel):  # BERTLM, MultimodalBertClf
 
         # self.bertformlm = BertForMaskedLM.from_pretrained(args.bert_model).cls
 
-    def forward(self, cls_tok, input_txt, attn_mask, segment, input_img):
-        x_mlm, x_itm = self.enc(cls_tok, input_txt, attn_mask, segment, input_img)  # bsz, max_len, hidden
+    def forward(self, cls_tok, input_txt, attn_mask, segment, input_img, sep_tok):
+        # x = self.enc(cls_tok, input_txt, attn_mask, segment, input_img)  # bsz, max_len, hidden
+        x_mlm, x_itm = self.enc(cls_tok, input_txt, attn_mask, segment, input_img, sep_tok)  # bsz, max_len, hidden
         return self.mlm(x_mlm), self.itm(x_itm)
         # return self.bertformlm(x), self.itm(x)
 
@@ -121,7 +204,6 @@ class MaskedLanguageModel(nn.Module):
         super().__init__()
         self.linear = nn.Linear(hidden, vocab_size)
         self.linear.weight = CXRBertEncoder(config, args).txt_embeddings.word_embeddings.weight
-        self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, x):
         return self.linear(x)  # x: torch.Size([8, 512, 768]), return: torch.Size([8, 512, 30522])
@@ -133,8 +215,7 @@ class ImageTextMatching(nn.Module):
     def __init__(self, hidden):
         super().__init__()
         self.linear = nn.Linear(hidden, 2)
-        self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, x):
-        # return self.linear(x[:, 0])  # [CLS], x_size: [bsz, max_len, hsz] -> [bsz, hsz], return [bsz, 2]
         return self.linear(x)
+        # return self.linear(x[:, 0])  # [CLS], x_size: [bsz, max_len, hsz] -> [bsz, hsz], return [bsz, 2]
