@@ -11,7 +11,7 @@ from fuzzywuzzy import fuzz
 import torch
 from torch.utils.data import Dataset
 from transformers import BertModel, BertTokenizer, AutoTokenizer
-# from transformers.tokenization_albert import AlbertTokenizer
+from transformers.tokenization_albert import AlbertTokenizer
 
 
 def truncate_txt(txt_tokens, max_seq_len):
@@ -21,27 +21,21 @@ def truncate_txt(txt_tokens, max_seq_len):
         else:
             txt_tokens.pop()
 
-class CXRDataset_origin(Dataset):
+
+class CXRDataset(Dataset):
     def __init__(self, data_path, tokenizer, transforms, args):
         self.args = args
         self.data_dir = os.path.dirname(data_path)
         self.data = [json.loads(l) for l in open(data_path)]
-        self.attn_1d = args.attn_1d
 
-        self.s2s_prob = args.s2s_prob
-        self.bi_prob = args.bi_prob
-
-        self.masked_attnt_dropout = args.masked_attnt_dropout
-    
-        # self.max_seq_len = args.max_seq_len  # 512
-        # self.max_seq_len -= args.num_image_embeds  # 512 - #img_embeds
+        self.max_seq_len = args.max_seq_len  # 512
+        self.max_seq_len -= args.num_image_embeds  # 512 - #img_embeds
 
         self.seq_len = args.seq_len
-        self.mixed_attnt = args.mixed_attnt
-        self._tril_matrix = torch.tril(torch.ones((self.seq_len + args.num_image_embeds+3, self.seq_len + args.num_image_embeds+3), dtype=torch.long))
-        self.random_matrix = torch.randint(0,2,(self.seq_len + args.num_image_embeds+3, self.seq_len + args.num_image_embeds+3), dtype=torch.long)
-
         self.transforms = transforms
+
+        self.total_len = self.seq_len + self.args.num_image_embeds + 3
+        self._tril_matrix = torch.tril(torch.ones((self.total_len, self.total_len), dtype=torch.long))
 
         self.tokenizer = tokenizer  # tokenizer = BertTokenizer.from_pretrained('bert-based-uncased').tokenize
 
@@ -82,10 +76,10 @@ class CXRDataset_origin(Dataset):
         # MLM
         origin_txt, img_path, is_aligned = self.random_pair_sampling(idx)
 
-        # if self.args.img_channel == 3:
-        image = Image.open(os.path.join(self.data_dir, img_path))
-        # elif self.args.img_channel == 1:
-        #     image = Image.open(os.path.join(self.data_dir, img_path)).convert("RGB")
+        if self.args.img_channel == 3:
+            image = Image.open(os.path.join(self.data_dir, img_path))
+        elif self.args.img_channel == 1:
+            image = Image.open(os.path.join(self.data_dir, img_path)).convert("RGB")
 
         image = self.transforms(image)
 
@@ -111,6 +105,8 @@ class CXRDataset_origin(Dataset):
 
         # attn_masks_t = [1] * len(input_ids)
         # attn_masks_i = [1] * (self.args.num_image_embeds + 1)  # [CLS]
+        attn_masks_t = [1] * len(input_ids)
+        attn_masks_i = [1] * (self.args.num_image_embeds + 2)  # [CLS], [SEP]
 
         # if self.args.bert_model == "albert-base-v2":
         #     padding = [self.vocab_stoi["<pad>"] for _ in range(self.max_seq_len - len(input_ids) - 1)]  # [CLS]
@@ -123,81 +119,52 @@ class CXRDataset_origin(Dataset):
             padding = [self.vocab_stoi["[PAD]"] for _ in range(self.seq_len - len(input_ids) + 1)]  # [SEP]
             label_padding = [-100 for _ in range(self.seq_len - len(input_ids) + 1)]  # [SEP]
 
-        # """ ###self-attention mask###
-        extended_attn_masks = torch.zeros(self.args.num_image_embeds+self.seq_len+3, self.args.num_image_embeds+self.seq_len+3, dtype=torch.long)
-        second_st, second_end = self.args.num_image_embeds+2, self.args.num_image_embeds+2+len(input_ids) #CLS, SEP + input_ids
-        
-        
-        if self.s2s_prob == 1.0:
-            extended_attn_masks[:, :self.args.num_image_embeds+2].fill_(1)
-            extended_attn_masks[second_st:second_end, second_st:second_end].copy_(
-                self._tril_matrix[:second_end-second_st, :second_end-second_st])
-            attn_masks = extended_attn_masks
-
-        elif self.bi_prob == 1.0 and self.attn_1d == False and self.masked_attnt_dropout==False:
-            extended_attn_masks = torch.tensor([1] * (self.args.num_image_embeds+len(input_ids)+2) + [0] * len(padding), dtype=torch.long) \
-               .unsqueeze(0).expand(self.args.num_image_embeds+self.seq_len+3, self.args.num_image_embeds+self.seq_len+3).clone()
-            attn_masks = extended_attn_masks
-        
-        elif self.bi_prob == 1.0 and self.attn_1d == False and self.masked_attnt_dropout:
-            extended_attn_masks[:, :self.args.num_image_embeds+2].fill_(1)
-            ################################### if text key에 대해서만 random matrix (50%) 적용 할때,##################################
-            # extended_attn_masks[second_st:second_end, second_st:second_end].copy_(
-            #     self.random_matrix[:second_end-second_st, :second_end-second_st])
-            ################################### if 전체 key에 대해서 random matrix (50%) 적용 할때,##################################
-            # extended_attn_masks[:second_end, :second_end].copy_(
-            #     self.random_matrix[:second_end, :second_end])
-            ##################################text key에도 attention이 걸리도록 새로 추가해준 부분.#################################
-            extended_attn_masks[second_st:second_end, second_st:second_end].copy_(
-                self._tril_matrix[:second_end-second_st, :second_end-second_st])
-            extended_attn_masks[:self.args.num_image_embeds+2, :].fill_(1)
-            ##############################################################################################################
-            attn_masks = extended_attn_masks
-
-        elif self.bi_prob == 1.0 and self.attn_1d == True:
-            attn_masks_t = [1] * len(input_ids)
-            attn_masks_i = [1] * (self.args.num_image_embeds + 2)  # [CLS], [SEP]
-            attn_masks_t.extend(padding)
-            attn_masks = attn_masks_i + attn_masks_t  # attn_masks [1, 1, 1, 1, 1, 1, 1, 1, 0, 0] -> Img_feat, Token, Pad
-            attn_masks = torch.tensor(attn_masks)
-        
-
-        elif (self.s2s_prob + self.bi_prob) == 1.0 and self.mixed_attnt:
-            #bidirectional attention mask
-            full_attn = torch.tensor([1] * (self.args.num_image_embeds+len(input_ids)+2) + [0] * len(padding), dtype=torch.long) \
-               .unsqueeze(0).expand(self.args.num_image_embeds+self.seq_len+3, self.args.num_image_embeds+self.seq_len+3).clone()
-
-            #seq2seq attention mask
-            extended_attn_masks[:, :self.args.num_image_embeds+2].fill_(1)
-            extended_attn_masks[second_st:second_end, second_st:second_end].copy_(
-                self._tril_matrix[:second_end-second_st, :second_end-second_st])
-            s2s_attn = extended_attn_masks
-
-
-            vlp_lst = [full_attn, s2s_attn]
-
-            attn_masks_tensor = random.choices(vlp_lst, weights=[self.bi_prob, self.s2s_prob])[0]
-
-
-
-
-
         input_ids.extend(padding)
-        # attn_masks_t.extend(padding)
+        attn_masks_t.extend(padding)
         txt_labels_t.extend(label_padding)
 
         txt_labels = txt_labels_i + txt_labels_t
-        # attn_masks = attn_masks_i + attn_masks_t  # attn_masks [1, 1, 1, 1, 1, 1, 1, 1, 0, 0] -> Img_feat, Token, Pad
+        attn_masks = attn_masks_i + attn_masks_t  # attn_masks [1, 1, 1, 1, 1, 1, 1, 1, 0, 0] -> Img_feat, Token, Pad
 
         # segment = [1 for _ in range(self.max_seq_len - 1)]
         segment = [1 for _ in range(self.seq_len + 1)]  # 2 [SEP]
+        # print('segment:', len(segment))
 
         cls_tok = [self.vocab_stoi["[CLS]"]]
         cls_tok = torch.tensor(cls_tok)
-        input_ids = torch.tensor(input_ids)
+        input_ids_tensor = torch.tensor(input_ids)
         txt_labels = torch.tensor(txt_labels)
         segment = torch.tensor(segment)
         is_aligned = torch.tensor(is_aligned)
+        # 1d attn
+        attn_1d = torch.tensor(attn_masks)
+
+        full_attn = torch.tensor((attn_masks_i + attn_masks_t),
+                                 dtype=torch.long).unsqueeze(0).expand(self.total_len, self.total_len).clone()
+
+        extended_attn_masks = torch.zeros(self.total_len, self.total_len, dtype=torch.long)
+        second_st, second_end = self.args.num_image_embeds + 2, self.args.num_image_embeds + 2 + len(input_ids)
+        extended_attn_masks[:, :self.args.num_image_embeds + 2].fill_(1)
+        extended_attn_masks[second_st:second_end, second_st:second_end].copy_(
+            self._tril_matrix[:second_end - second_st, :second_end - second_st])
+        s2s_attn = extended_attn_masks
+
+        vlp_lst = [full_attn, s2s_attn]
+
+        if (self.args.s2s_prob + self.args.bi_prob) == 1.0:
+            attn_masks_tensor = random.choices(vlp_lst, weights=[self.args.bi_prob, self.args.s2s_prob])[0]
+            # print(attn_masks_tensor.size())
+            # print(f'VLP attention, Bidirectional {self.args.bi_prob} & S2S {self.args.s2s_prob}')
+        else:
+            if self.args.attn_1d:
+                attn_masks_tensor = attn_1d
+                # print(attn_masks_tensor.size())
+                # print('1d attention mask')
+            else:
+                attn_masks_tensor = full_attn
+                # print(attn_masks_tensor.size())
+                # print('Full attention mask from VLP')
+
 
         sep_tok = [self.vocab_stoi["[SEP]"]]
         sep_tok = torch.tensor(sep_tok)
@@ -221,8 +188,13 @@ class CXRDataset_origin(Dataset):
         is_aligned : Aligned(1) / Not aligned(0)
         input_ids_ITM : 100, 3, 7, 101, 45, 105, 0, 0 -> not masked, just encoded_sequence
         """
-
-        return cls_tok, input_ids, txt_labels, attn_masks, image, segment, is_aligned, sep_tok
+        # print('input_id_size:', input_ids.size())
+        # print('txt_labels:', txt_labels.size())
+        # print('attn_masks:', attn_masks.size())
+        # print('segment:', segment.size())
+        # print('is_aligned:', is_aligned)
+        # print('input_ids_ITM:', input_ids_ITM.size())
+        return cls_tok, input_ids_tensor, txt_labels, attn_masks_tensor, image, segment, is_aligned, sep_tok
 
     def random_word(self, tokens):
         output_label = []
@@ -253,7 +225,7 @@ class CXRDataset_origin(Dataset):
         return tokens, output_label
 
     def random_pair_sampling(self, idx):
-        _, _, label, txt, img = self.data[idx].keys()  # id, txt, img
+        _, label, txt, img = self.data[idx].keys()  # id, txt, img
         # _, _, txt, img = self.data[idx].keys()  # id, label, txt, img
 
         d_label = self.data[idx][label]
@@ -266,7 +238,7 @@ class CXRDataset_origin(Dataset):
             # random_txt, random_label = self.get_random_line()
             # return random_txt, d_img, 0
 
-            for itr in range(100):
+            for itr in range(300):
                 random_txt, random_label = self.get_random_line()
                 if fuzz.token_sort_ratio(d_label, random_label) != 100:
                     return random_txt, d_img, 0
@@ -279,6 +251,7 @@ class CXRDataset_origin(Dataset):
         txt = self.data[rand_num]['text']
         label = self.data[rand_num]['label']
         return txt, label
+
 # ----------ITM for txt, img and labels---------------------------------------------
 # def random_pair_sampling(self, idx):
 #     _, label, txt, img = self.data[idx].keys()

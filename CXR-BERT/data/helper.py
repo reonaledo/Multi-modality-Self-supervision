@@ -21,15 +21,16 @@ from models.train import CXRBERT_Trainer
 from transformers import BertTokenizer
 
 
-def get_transforms():
-
-    return transforms.Compose(
-        [
-            # transforms.ColorJitter(brightness=(0.8, 1.2), contrast=(0.8, 1.2)),
-            transforms.Resize(224),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-
-        ]
-    )
+def get_transforms(args):
+    if args.num_image_embeds < 100:
+            return transforms.Compose([
+                # transforms.ColorJitter(brightness=(0.8, 1.2), contrast=(0.8, 1.2)),
+                transforms.Resize(224),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+    else:
+        return transforms.Compose([
+                # transforms.ColorJitter(brightness=(0.8, 1.2), contrast=(0.8, 1.2)),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
