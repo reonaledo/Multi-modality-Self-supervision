@@ -61,8 +61,8 @@ class random_sample(nn.Module):
         out = out.transpose(1, 2).contiguous()  # B x N x 2048
         # print('out_size:', out.size())  # torch.Size([32, 256, 2048])
         # print('random_sample_size out:', out.size())
-
-        
+        # print('random_sample_size out:', random_sample.size())
+        # input("img size check !   STOP!!!")
 
         # position_ids = torch.arange(seq_length, dtype=torch.long).cuda()
         # position_ids = position_ids.unsqueeze(0).expand(bsz, seq_length)
@@ -80,9 +80,6 @@ class random_sample(nn.Module):
         random_sample = out[:, random_sampling] #16, 0, 2048???
         random_position = vis_pe[:, random_sampling]
         
-        # print('random_sample_size out:', random_sample.size())
-
-        # input("img size check !   STOP!!!")
         return random_sample, random_position
 
 class fully_use_cnn(nn.Module):
