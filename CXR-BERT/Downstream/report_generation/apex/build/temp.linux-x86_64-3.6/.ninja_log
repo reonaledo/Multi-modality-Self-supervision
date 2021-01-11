@@ -1,0 +1,3 @@
+# ninja log v5
+0	20192	1606798483839664038	/home/ubuntu/VLP/apex/build/temp.linux-x86_64-3.6/csrc/flatten_unflatten.o	c59bb244d5f1808b
+1	11648	1606798495915566166	/home/ubuntu/VLP/apex/build/temp.linux-x86_64-3.6/csrc/scale_check_overflow_kernel.o	60e8b566d68d961e
