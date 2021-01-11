@@ -8,7 +8,7 @@
 #
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]= "6,7"
+os.environ["CUDA_VISIBLE_DEVICES"]= "5"
 scenari = 3
 
 
@@ -29,7 +29,7 @@ import wandb
 
 
 def get_args(parser):
-    parser.add_argument("--batch_sz", type=int, default=32)
+    parser.add_argument("--batch_sz", type=int, default=2)
 
     parser.add_argument("--data_path", type=str, default='/home/mimic-cxr/dataset/image_preprocessing/',
                         help="train dataset for training")
@@ -135,7 +135,14 @@ def get_criterion(args, device):
     if args.task_type == "multilabel":
         if args.weight_classes:
             freqs = [args.label_freqs[l] for l in args.labels]
-            label_weights = (torch.FloatTensor(freqs) / args.train_data_len) ** -1
+            negative = [args.train_data_len-l for l in freqs]
+
+            label_weights = (torch.FloatTensor(freqs) / torch.FloatTensor(negative)) ** -1
+            # label_weights2 = (torch.FloatTensor(freqs) / args.train_data_len) ** -1
+
+            # print("label_weights", label_weights)
+            # print("label_weights2", label_weights2)
+
             criterion = nn.BCEWithLogitsLoss(pos_weight=label_weights.to(device))
         else:
             criterion = nn.BCEWithLogitsLoss()

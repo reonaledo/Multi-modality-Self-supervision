@@ -24,13 +24,14 @@ from data.vocab import Vocab
 def get_transforms(args):
     return transforms.Compose(
         [
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
+            transforms.Resize(224),
+            # transforms.CenterCrop(224),
             transforms.ToTensor(),
-            transforms.Normalize(
-                mean=[0.46777044, 0.44531429, 0.40661017],
-                std=[0.12221994, 0.12145835, 0.14380469],
-            ),
+            # transforms.Normalize(
+            #     mean=[0.46777044, 0.44531429, 0.40661017],
+            #     std=[0.12221994, 0.12145835, 0.14380469],
+            # ),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]
     )
 
@@ -155,42 +156,5 @@ def get_data_loaders(args):
         num_workers=args.n_workers,
         collate_fn=collate,
     )
-
-    # test_set = JsonlDataset(
-    #     os.path.join(args.data_path, "Valid.jsonl"),
-    #     tokenizer,
-    #     transforms,
-    #     vocab,
-    #     args,
-    # )
-
-    # test_loader = DataLoader(
-    #     test_set,
-    #     batch_size=args.batch_sz,
-    #     shuffle=False,
-    #     num_workers=args.n_workers,
-    #     collate_fn=collate,
-    # )
-
-    # test_gt = JsonlDataset(
-    #     os.path.join(args.data_path, "test_hard_gt.jsonl"),
-    #     tokenizer,
-    #     transforms,
-    #     vocab,
-    #     args,
-    # )
-
-    # test_gt_loader = DataLoader(
-    #     test_gt,
-    #     batch_size=args.batch_sz,
-    #     shuffle=False,
-    #     num_workers=args.n_workers,
-    #     collate_fn=collate,
-    # )
-
-    # test = {
-    #     "test": test_loader,
-    #     "test_gt": test_gt_loader,
-    # }
 
     return train_loader, val_loader#, test
