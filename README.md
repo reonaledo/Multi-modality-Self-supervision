@@ -65,30 +65,30 @@ Our proposed architecture MedViLL is a single BERT-based model that learns unifi
 ## Reproducing results on BERT.
 Section A. Disease Classification
 Example:
-'''
+```
 askdfksdflksd
-'''
+```
 
 
 Section B. Image-Text Retrieval
 Example:
-'''
+```
 askdfksdflksd
-'''
+```
 
 
 Section C. Medical Visual Qestion Answering
 Example:
-'''
+```
 askdfksdflksd
-'''
+```
 
 
 Section D. Report Generation
 Example:
-'''
+```
 askdfksdflksd
-'''
+```
 
 
 
