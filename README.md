@@ -6,21 +6,21 @@ We introduce a vision-and-language pre-training model with a novel self-attentio
 
 > *  MIMIC-CXR <jpg version>
 >>        ⎿ Dataset (xxx)                
->>>            ├ subject_id 001         
->>>         │   ⎿ study_id                   
->>>         │       ├ 00000001_000.jpg           
->>>         │
->>>         │   ⎿ study_id 
->>>         │       ⎿ 00001335_006.jpg  
->>>         │
->>>         ├ subject_id 002       
->>>         │   ⎿ study_id                   
->>>         │       ├ 00001336_000.jpg                 
->>>         │                                       
->>>         ├ mimic_cxr_chexpert.csv (Label info)
->>>         ├ mimic_cxr_nebio.csv (Label info)
->>>         ├ mimic_cxr_metadata.csv (View info, subject id, anonymous dicom id, etc ..)
->>>         ⎿ mimic_cxr_split.csv (Train, Valid, Test set)
+>>            ├ subject_id 001         
+>>         │   ⎿ study_id                   
+>>         │       ├ 00000001_000.jpg           
+>>         │
+>>         │   ⎿ study_id 
+>>         │       ⎿ 00001335_006.jpg  
+>>         │
+>>         ├ subject_id 002       
+>>         │   ⎿ study_id                   
+>>         │       ├ 00001336_000.jpg                 
+>>         │                                       
+>>         ├ mimic_cxr_chexpert.csv (Label info)
+>>         ├ mimic_cxr_nebio.csv (Label info)
+>>         ├ mimic_cxr_metadata.csv (View info, subject id, anonymous dicom id, etc ..)
+>>         ⎿ mimic_cxr_split.csv (Train, Valid, Test set)
 
 # Our Contributions.
 The main contributions of this paper can be summarized as follows:
