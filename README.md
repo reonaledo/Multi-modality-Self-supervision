@@ -1,14 +1,9 @@
 # Multi-modal Understanding and Generation for Medical Images and Text via Vision-Language Pre-Training
-We introduce a vision-and-language pre-training model with a novel self-attention mask in the biomedical domain. During the pre-training, our model conducts masked language modeling and label-conditioned imagetext matching. Then the pre-trained model is fine-tuned for disease classification, medical visual question answering, label-conditioned image-text retrieval, and radiology report generation.
-
-
-#### • Original Data Structure.
-> *  MIMIC-CXR <jpg version>
+This repository provides the code for fine-tuning MedViLL(Medical Vision Language Learner), a medical vision language pre-training model with a novel self-attention mask. Then the pre-trained model is fine-tuned for disease classification, medical visual question answering, label-conditioned image-text retrieval, and radiology report generation. Please refer to our paper Multi-modal Understanding and Generation for Medical Images and Text via Vision-Language Pre-Training for more details.
 
 
 # Our Contributions.
 The main contributions of this paper can be summarized as follows:
-
 (1) We propose Medical Vision Language Learner (MedViLL), a multi-modal pre-training model for medical images and text with a novel self-attention scheme.
 
 (2) We demonstrate the effectiveness of our approach with detailed ablation study on extensive vision language understanding and generation-based downstream tasks, including disease classification, image-text retrieval, visual question answering, and report generation.
@@ -20,29 +15,52 @@ The main contributions of this paper can be summarized as follows:
 Our proposed architecture MedViLL is a single BERT-based model that learns unified contextualized vision-language (VL) representation for both Vision Language Understanding(VLU) and Vision Language Generation (VLG). MedViLL performs pre-training with a CNN-based visual encoder and a cross-modal Transformer for VL joint representation learning. After pre-training, our model can be easily used for VLU and VLG tasks with task-specific finetuning. MedViLL can be divided into four main components (visual feature embedding, language feature embedding, joint embedding, and pre-training objectives).
 
 
+# Pre-trained models.
+We are releasing five versions of BERT-based pre-trained weights with different types of self-attention masks. Pre-training for the joint embedding was built on the BERT-base architecutre(12 hidden layers, 12 attention heads, 768 hidden size), and training details are described in our paper. Currently avaliable versions of pre-trained weights are as follows:
+
+<Pre-trained model will be updated>
+- MedViLL - BERT-Base model with Bidirectional Auto-regressive attention mask.
+- Bi & Seq2Seq - BERT-Base model with Seq2Seq attention mask(75% chance) and Bidirectional attention mask(25% chance) in every mini-batch.
+- Bidirectional - BERT-Base model with Bidirectional attention mask.
+- Seq2Seq - BERT-Base model with Seq2Seq attention mask.
+- Non-cross - BERT-Base model with Non-cross modality attention mask.
+
 ## Reproducing results on BERT.
-Section A. Disease Classification
+Section A. Installation
 Example:
 ```
 askdfksdflksd
 ```
 
 
-Section B. Image-Text Retrieval
+Section B. Pre-training model
 Example:
 ```
 askdfksdflksd
 ```
 
 
-Section C. Medical Visual Qestion Answering
+
+Section C. Downstream model
+Disease Classification
 Example:
 ```
 askdfksdflksd
 ```
 
+Image-Text Retrieval
+Example:
+```
+askdfksdflksd
+```
 
-Section D. Report Generation
+Medical Visual Qestion Answering
+Example:
+```
+askdfksdflksd
+```
+
+Report Generation
 Example:
 ```
 askdfksdflksd
