@@ -19,6 +19,7 @@ Our proposed architecture MedViLL is a single BERT-based model that learns unifi
 We are releasing five versions of BERT-based pre-trained weights with different types of self-attention masks. Pre-training for the joint embedding was built on the BERT-base architecutre(12 hidden layers, 12 attention heads, 768 hidden size), and training details are described in our paper. Currently avaliable versions of pre-trained weights are as follows:
 
 <Pre-trained model will be updated>
+  
 - MedViLL - BERT-Base model with Bidirectional Auto-regressive attention mask.
 
 - Bi & Seq2Seq - BERT-Base model with Seq2Seq attention mask(75% chance) and Bidirectional attention mask(25% chance) in every mini-batch.
