@@ -1,4 +1,4 @@
-# Multi-modal Understanding and Generation for Medical Images and Text via Vision-Language Pre-Traini
+# Multi-modal Understanding and Generation for Medical Images and Text via Vision-Language Pre-Training
 We introduce a vision-and-language pre-training model with a novel self-attention mask in the biomedical domain. During the pre-training, our model conducts masked language modeling and label-conditioned imagetext matching. Then the pre-trained model is fine-tuned for disease classification, medical visual question answering, label-conditioned image-text retrieval, and radiology report generation.
 
 
