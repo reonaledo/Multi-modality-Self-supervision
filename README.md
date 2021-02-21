@@ -3,50 +3,18 @@ We introduce a vision-and-language pre-training model with a novel self-attentio
 
 
 #### • Original Data Structure.
-> *MIMIC-CXR <jpg version>
+Example> *MIMIC-CXR <jpg version>
         ⎿ Dataset (xxx)                
             ├ subject_id 001         
-            │   ⎿ study_id                   
-            │       ├ 00000001_000.jpg           
-            │       ⎿ 00001335_006.jpg (1~3개)           
-            │
-            │   ⎿ study_id 
-            │       ⎿ 00001335_006.jpg  
-            │
+            │   ⎿ study_id                             
+            │       ⎿ 00001335_006.jpg          
             ├ subject_id 002       
             │   ⎿ study_id                   
-            │       ├ 00001336_000.jpg                 
             │       ⎿ 00003923_013.jpg                      
-            │                                       
             ├ mimic_cxr_chexpert.csv (Label info)
             ├ mimic_cxr_nebio.csv (Label info)
             ├ mimic_cxr_metadata.csv (View info, subject id, anonymous dicom id, etc ..)
             ⎿ mimic_cxr_split.csv (Train, Valid, Test set)
-
-
-> * MIMIC-CXR <dicom version>
-        ⎿ Dataset (xxx)                
-            ├ subject_id 001         
-            │   ⎿ study_id 01                 
-            │       ├ 00000001_000.dcm           
-            │       ⎿ 00001335_006.dcm (1~3개)           
-            │   ⎿ study_id 01.txt
-            │   
-            │   ⎿ study_id 02
-            │       ⎿ 00001335_006.dcm  
-            │   ⎿ study_id 02.txt
-            │   
-            │
-            ├ subject_id 002       
-            │   ⎿ study_id 01                
-            │       ├ 00001336_000.dcm                 
-            │       ⎿ 00003923_013.dcm                      
-            │   ⎿ study_id 01.txt
-            │   
-            ├ cxr-record-list.csv (subject id, study id, dicom id, path)
-            ├ cxr-study-list.csv (subject id, study id, text path)
-            ⎿ cxr-reports folder (only contain txt files)
-
 
 # Our Contributions.
 The main contributions of this paper can be summarized as follows:
@@ -89,11 +57,3 @@ Example:
 ```
 askdfksdflksd
 ```
-
-
-
-Detailed script you can check those files(main.py, data.transformer, data.).
-
-How to run the model?
-1. Conda activate simclr 
-2. python main.py
