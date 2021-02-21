@@ -31,7 +31,7 @@ We are releasing five versions of BERT-based pre-trained weights with different 
 - Non-cross - BERT-Base model with Non-cross modality attention mask.
 
 ## Reproducing results on BERT.
-Section A. Installation
+### Section A. Installation
 Sections below describe the virtual env installation and the fine-training process of MedviLL based on pytorch version 1.7, python version 3.8. To fine-tune MedViLL, you need to download the pre-trained weights of MedViLL. After downloading the pre-trained weights, use environment.yml to install conda based virtual env as follows:
 
 ```
