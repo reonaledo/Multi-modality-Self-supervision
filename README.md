@@ -6,7 +6,7 @@ We introduce a vision-and-language pre-training model with a novel self-attentio
 
 > *  MIMIC-CXR <jpg version>
 >>        ⎿ Dataset (xxx)                
->>            ├ subject_id 001         
+>>         ├ subject_id 001         
 >>         │   ⎿ study_id                   
 >>         │       ├ 00000001_000.jpg           
 >>         │
