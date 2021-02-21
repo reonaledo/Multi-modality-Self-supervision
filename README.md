@@ -3,7 +3,7 @@ We introduce a vision-and-language pre-training model with a novel self-attentio
 
 
 #### • Original Data Structure.
-Example> *MIMIC-CXR <jpg version>
+> *MIMIC-CXR <jpg version>
         ⎿ Dataset (xxx)                
             ├ subject_id 001         
             │   ⎿ study_id                             
