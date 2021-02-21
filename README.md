@@ -20,9 +20,13 @@ We are releasing five versions of BERT-based pre-trained weights with different 
 
 <Pre-trained model will be updated>
 - MedViLL - BERT-Base model with Bidirectional Auto-regressive attention mask.
+
 - Bi & Seq2Seq - BERT-Base model with Seq2Seq attention mask(75% chance) and Bidirectional attention mask(25% chance) in every mini-batch.
+
 - Bidirectional - BERT-Base model with Bidirectional attention mask.
+
 - Seq2Seq - BERT-Base model with Seq2Seq attention mask.
+
 - Non-cross - BERT-Base model with Non-cross modality attention mask.
 
 ## Reproducing results on BERT.
