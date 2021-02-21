@@ -50,6 +50,7 @@ We introduce a vision-and-language pre-training model with a novel self-attentio
 
 # Our Contributions.
 The main contributions of this paper can be summarized as follows:
+
 (1) We propose Medical Vision Language Learner (MedViLL), a multi-modal pre-training model for medical images and text with a novel self-attention scheme.
 
 (2) We demonstrate the effectiveness of our approach with detailed ablation study on extensive vision language understanding and generation-based downstream tasks, including disease classification, image-text retrieval, visual question answering, and report generation.
