@@ -62,7 +62,36 @@ The main contributions of this paper can be summarized as follows:
 Our proposed architecture MedViLL is a single BERT-based model that learns unified contextualized vision-language (VL) representation for both Vision Language Understanding(VLU) and Vision Language Generation (VLG). MedViLL performs pre-training with a CNN-based visual encoder and a cross-modal Transformer for VL joint representation learning. After pre-training, our model can be easily used for VLU and VLG tasks with task-specific finetuning. MedViLL can be divided into four main components (visual feature embedding, language feature embedding, joint embedding, and pre-training objectives).
 
 
-## Code Implemenataion.
+## Reproducing results on BERT.
+Section A. Disease Classification
+Example:
+'''
+askdfksdflksd
+'''
+
+
+Section B. Image-Text Retrieval
+Example:
+'''
+askdfksdflksd
+'''
+
+
+Section C. Medical Visual Qestion Answering
+Example:
+'''
+askdfksdflksd
+'''
+
+
+Section D. Report Generation
+Example:
+'''
+askdfksdflksd
+'''
+
+
+
 Detailed script you can check those files(main.py, data.transformer, data.).
 
 How to run the model?
