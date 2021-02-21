@@ -16,6 +16,7 @@ Our proposed architecture MedViLL is a single BERT-based model that learns unifi
 
 
 # Download.
+## Pre-training model.
 We are releasing five versions of BERT-based pre-trained weights with different types of self-attention masks. Pre-training for the joint embedding was built on the BERT-base architecutre(12 hidden layers, 12 attention heads, 768 hidden size), and training details are described in our paper. Currently avaliable versions of pre-trained weights are as follows:
 
 <Pre-trained model will be updated>
@@ -30,17 +31,28 @@ We are releasing five versions of BERT-based pre-trained weights with different 
 
 - Non-cross - BERT-Base model with Non-cross modality attention mask.
 
+## Datasets.
+We provide a pre-processed version of multiple datasets for each task as follows:
+- MIMIC-CXR: (xx MB), Unique study of the AP view imaging and radiology report pair.
+- OPEN-I: (xx MB), Unique study of the frontal view(AP and PA view) imaging and radiology report pair.
+- VQA-RAD: (xx MB), 
+
+
 ## Reproducing results on BERT.
 ### Section A. Installation
-Sections below describe the virtual env installation and the fine-training process of MedviLL based on pytorch version 1.7, python version 3.8. To fine-tune MedViLL, you need to download the pre-trained weights of MedViLL. After downloading the pre-trained weights, use environment.yml to install conda based virtual env as follows:
+Sections below describe the virtual env installation and the fine-training process of MedviLL based on pytorch version 1.7, python version 3.8. 
+
+To fine-tune MedViLL, you need to download the pre-trained weights of MedViLL. After downloading the pre-trained weights, use environment.yml to install conda based virtual env as follows:
 
 ```
 $ git clone https://github.com/SuperSupermoon/Multi-modality-Self-supervision.git
 $ cd Multi-modality-Self-supervision; conda env create --file environment.yml
 ```
 
+Note that this repository is based on the BERT repository by Google. All fine-tuning models were conducted on 8 Geforce RTX-3090 GPU machines, each of which has 24GB of VRAM. 
 
-Section B. Pre-training model
+
+### Section B. Pre-training model
 Example:
 ```
 askdfksdflksd
@@ -48,7 +60,7 @@ askdfksdflksd
 
 
 
-Section C. Downstream model
+### Section C. Downstream model
 Disease Classification
 Example:
 ```
