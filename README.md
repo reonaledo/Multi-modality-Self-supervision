@@ -15,7 +15,7 @@ The main contributions of this paper can be summarized as follows:
 Our proposed architecture MedViLL is a single BERT-based model that learns unified contextualized vision-language (VL) representation for both Vision Language Understanding(VLU) and Vision Language Generation (VLG). MedViLL performs pre-training with a CNN-based visual encoder and a cross-modal Transformer for VL joint representation learning. After pre-training, our model can be easily used for VLU and VLG tasks with task-specific finetuning. MedViLL can be divided into four main components (visual feature embedding, language feature embedding, joint embedding, and pre-training objectives).
 
 
-# Downloads.
+# Download.
 We are releasing five versions of BERT-based pre-trained weights with different types of self-attention masks. Pre-training for the joint embedding was built on the BERT-base architecutre(12 hidden layers, 12 attention heads, 768 hidden size), and training details are described in our paper. Currently avaliable versions of pre-trained weights are as follows:
 
 <Pre-trained model will be updated>
@@ -32,9 +32,11 @@ We are releasing five versions of BERT-based pre-trained weights with different 
 
 ## Reproducing results on BERT.
 Section A. Installation
-Example:
+Sections below describe the virtual env installation and the fine-training process of MedviLL based on pytorch version 1.7, python version 3.8. To fine-tune MedViLL, you need to download the pre-trained weights of MedViLL. After downloading the pre-trained weights, use environment.yml to install conda based virtual env as follows:
+
 ```
-askdfksdflksd
+$ git clone https://github.com/SuperSupermoon/Multi-modality-Self-supervision.git
+$ cd Multi-modality-Self-supervision; conda env create --file environment.yml
 ```
 
 
