@@ -1,4 +1,5 @@
 """
+Downstream task: Retrieval (IR & TR)
 Label conditioned retrieval task
 
 Metric
