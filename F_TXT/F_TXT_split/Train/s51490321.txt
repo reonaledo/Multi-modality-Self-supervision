@@ -1,1 +1,0 @@
-Slightly rotated positioning. Allowing for this, there has been some interval clearing of the retrocardiac opacity and of the right base opacity. As result, the left hemidiaphragm is now visible. Vascular crowding in the right cardiophrenic region is improved. Otherwise, I doubt significant interval change.

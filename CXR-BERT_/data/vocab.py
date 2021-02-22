@@ -1,6 +1,0 @@
-"""
-...
-"""
-
-class Vocab():
-    pass

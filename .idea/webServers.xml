@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="147c5a3d-5a45-4877-b0c4-d1b2af1c8b34" name="nippa">
+        <fileTransfer accessType="SFTP" host="49.50.160.136" port="16022" sshConfigId="2b942ecc-de50-4eff-a066-6188450b510b" sshConfig="ubuntu@49.50.160.136:16022 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+      <webServer id="a9a33ab1-b846-4bef-872b-36be8a10add2" name="hglee_26">
+        <fileTransfer accessType="SFTP" host="143.248.157.26" port="8022" sshConfigId="5dc72b40-3eaa-43a8-9148-3d0f00143b32" sshConfig="hglee@143.248.157.26:8022 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+      <webServer id="ca24bf77-8bb4-4c20-8599-c662df3af0b9" name="hglee_135">
+        <fileTransfer accessType="SFTP" host="143.248.157.135" port="8022" sshConfigId="bcd85d25-bbd2-49c8-a587-615fe992858c" sshConfig="hglee@143.248.157.135:8022 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+      <webServer id="3034bbe5-fbbd-453a-ad57-402da7485c5b" name="hglee_77">
+        <fileTransfer accessType="SFTP" host="143.248.157.77" port="8022" sshConfigId="9a9a575a-f287-40f1-8453-74078e4a4138" sshConfig="hglee@143.248.157.77:8022 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

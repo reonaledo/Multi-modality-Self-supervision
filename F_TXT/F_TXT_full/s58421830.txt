@@ -1,1 +1,0 @@
-The PICC line tip is currently at the level of lower SVC. Rest of the findings are unremarkable

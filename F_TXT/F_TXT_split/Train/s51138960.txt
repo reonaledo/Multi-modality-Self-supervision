@@ -1,1 +1,0 @@
-No major change, diffuse opacities persist.
