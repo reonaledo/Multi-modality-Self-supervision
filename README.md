@@ -60,8 +60,6 @@ Unzip mimic, openi, and dataset_RAD.tar.gz files.
 $ cd Multi-modality-Self-supervision; tar -zxvf [file_name.tar.gz]
 ```
 
-Note that this repository is based on the BERT repository by Google. All fine-tuning models were conducted on 8 Geforce RTX-3090 GPU machines, each of which has 24GB of VRAM. 
-
 
 ### Section C. Pre-training model
 Example:
