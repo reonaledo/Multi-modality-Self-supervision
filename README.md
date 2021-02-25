@@ -77,11 +77,13 @@ askdfksdflksd
 Medical Visual Qestion Answering
 Example:
 ```
+cd Multi-modality-Self-supervision/Downstream_task/report_generation_and_vqa
 python sc/finetune.py --tasks vqa --s2s_prob 0 --bi_prob 1 --mask_prob 0
 ```
 
 Report Generation
 Example:
 ```
+cd Multi-modality-Self-supervision/Downstream_task/report_generation_and_vqa
 python sc/finetune.py --tasks report_generation --mask_prob 0.15 --s2s_prob 1 --bi_prob 0
 ```
