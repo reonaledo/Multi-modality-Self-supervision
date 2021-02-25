@@ -77,11 +77,11 @@ askdfksdflksd
 Medical Visual Qestion Answering
 Example:
 ```
-askdfksdflksd
+python sc/finetune.py --mask_prob 0
 ```
 
 Report Generation
 Example:
 ```
-askdfksdflksd
+python sc/finetune.py --mask_prob 0.15
 ```
