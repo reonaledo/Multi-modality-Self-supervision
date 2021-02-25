@@ -52,7 +52,7 @@ $ cd Multi-modality-Self-supervision; conda env create --file environment.yml
 
 Note that this repository is based on the BERT repository by Google. All fine-tuning models were conducted on 8 Geforce RTX-3090 GPU machines, each of which has 24GB of VRAM. 
 
-### Section B. Prepare Dataset
+### Section B. Prepare pre-processed dataset
 
 Unzip mimic, openi, and dataset_RAD.tar.gz files. 
 
