@@ -52,8 +52,18 @@ $ cd Multi-modality-Self-supervision; conda env create --file environment.yml
 
 Note that this repository is based on the BERT repository by Google. All fine-tuning models were conducted on 8 Geforce RTX-3090 GPU machines, each of which has 24GB of VRAM. 
 
+### Section B. Prepare Dataset
 
-### Section B. Pre-training model
+Unzip mimic, openi, and dataset_RAD.tar.gz files. 
+
+```
+$ cd Multi-modality-Self-supervision; tar -zxvf [file_name.tar.gz]
+```
+
+Note that this repository is based on the BERT repository by Google. All fine-tuning models were conducted on 8 Geforce RTX-3090 GPU machines, each of which has 24GB of VRAM. 
+
+
+### Section C. Pre-training model
 Example:
 ```
 askdfksdflksd
@@ -61,7 +71,7 @@ askdfksdflksd
 
 
 
-### Section C. Downstream model
+### Section D. Downstream model
 Disease Classification
 Example:
 ```
@@ -77,13 +87,13 @@ askdfksdflksd
 Medical Visual Qestion Answering
 Example:
 ```
-cd Multi-modality-Self-supervision/Downstream_task/report_generation_and_vqa
-python sc/finetune.py --tasks vqa --s2s_prob 0 --bi_prob 1 --mask_prob 0
+$ cd Multi-modality-Self-supervision/Downstream_task/report_generation_and_vqa
+$ python sc/finetune.py --tasks vqa --s2s_prob 0 --bi_prob 1 --mask_prob 0
 ```
 
 Report Generation
 Example:
 ```
-cd Multi-modality-Self-supervision/Downstream_task/report_generation_and_vqa
-python sc/finetune.py --tasks report_generation --mask_prob 0.15 --s2s_prob 1 --bi_prob 0
+$ cd Multi-modality-Self-supervision/Downstream_task/report_generation_and_vqa
+$ python sc/finetune.py --tasks report_generation --mask_prob 0.15 --s2s_prob 1 --bi_prob 0
 ```
