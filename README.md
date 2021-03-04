@@ -22,7 +22,7 @@ We are releasing five versions of BERT-based pre-trained weights with different 
 
 <Pre-trained model will be updated>
   
-- MedViLL - BERT-Base model with Bidirectional Auto-regressive attention mask.
+- [MedViLL](https://drive.google.com/file/d/1shOQrOWbkIeUUsQN48fEP6wj0e266jOb/view?usp=sharing) - BERT-Base model with Bidirectional Auto-regressive attention mask.
 
 - Bi & Seq2Seq - BERT-Base model with Seq2Seq attention mask(75% chance) and Bidirectional attention mask(25% chance) in every mini-batch.
 
@@ -36,7 +36,7 @@ We are releasing five versions of BERT-based pre-trained weights with different 
 We provide a pre-processed version of multiple datasets for each task as follows:
 - MIMIC-CXR: (xx MB), Unique study of the AP view imaging and radiology report pair.
 - OPEN-I: (xx MB), Unique study of the frontal view(AP and PA view) imaging and radiology report pair.
-- VQA-RAD: (xx MB), 
+- [VQA-RAD](https://drive.google.com/file/d/1zlNM7kQACaorfQD8n_Qtc5wkV_lh_60V/view?usp=sharing): (xx MB), 
 
 
 ## Reproducing results on BERT.
