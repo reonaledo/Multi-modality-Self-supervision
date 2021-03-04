@@ -24,7 +24,7 @@ We are releasing five versions of BERT-based pre-trained weights with different 
   
 - [MedViLL](https://drive.google.com/file/d/1shOQrOWbkIeUUsQN48fEP6wj0e266jOb/view?usp=sharing) - BERT-Base model with Bidirectional Auto-regressive attention mask.
 
-- [Bi & Seq2Seq](https://drive.google.com/file/d/1hn8DLgPkblIew_UEP3TwoLwKZw03Pkmk/view?usp=sharing) - BERT-Base model with Seq2Seq attention mask(75% chance) and Bidirectional attention mask(25% chance) in every mini-batch.
+- [Bi & Seq2Seq](https://drive.google.com/file/d/1hn8DLgPkblIew_UEP3TwoLwKZw03Pkmk/view?usp=sharing) - BERT-Base model with Seq2Seq attention mask(75%) and Bidirectional attention mask(25%) in every mini-batch.
 
 - [Bidirectional](https://drive.google.com/file/d/1GSb-CjUnfuTTDrb0tPEwHGo1Qg1JHvdf/view?usp=sharing) - BERT-Base model with Bidirectional attention mask.
 
