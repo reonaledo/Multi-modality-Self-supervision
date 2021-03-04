@@ -64,7 +64,8 @@ $ cd Multi-modality-Self-supervision; tar -zxvf [file_name.tar.gz]
 ### Section C. Pre-training model
 Example:
 ```
-askdfksdflksd
+$ cd Multi-modality-Self-supervision/CNN_BERT
+$ python main_cnn_bert.py
 ```
 
 
