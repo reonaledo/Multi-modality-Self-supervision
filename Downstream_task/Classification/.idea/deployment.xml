@@ -33,13 +33,6 @@
       <paths name="hglee@143.248.157.135:8022 password (4)">
         <serverdata>
           <mappings>
-            <mapping deploy="/home/hglee/cxr-bert" local="$PROJECT_DIR$" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="hglee@143.248.157.135:8022 password (5)">
-        <serverdata>
-          <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
@@ -47,49 +40,21 @@
       <paths name="hglee@143.248.157.26:8022 password">
         <serverdata>
           <mappings>
-            <mapping deploy="/home/hglee/cxr-bert" local="$PROJECT_DIR$" />
+            <mapping local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
       <paths name="hglee@143.248.157.77:8022 password">
         <serverdata>
           <mappings>
-            <mapping deploy="/home/hglee/cxr-bert" local="$PROJECT_DIR$" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="hglee@143.248.157.77:8022 password (1)">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/home/hglee/cxr-bert" local="$PROJECT_DIR$" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="hglee_135">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/home/hglee/cxr-bert" local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="hglee_26">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/home/hglee/cxr-bert" local="$PROJECT_DIR$" web="/" />
+            <mapping local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
       <paths name="hglee_77">
         <serverdata>
           <mappings>
-            <mapping deploy="/home/hglee/cxr-bert2" local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="nippa">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/home/ubuntu/HG/cxr-bert" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/home/hglee/cxr-bert/classification" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
