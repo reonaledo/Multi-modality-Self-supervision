@@ -34,9 +34,8 @@ from transformers.tokenization_albert import AlbertTokenizer
 from transformers import BertConfig, AlbertConfig, AutoConfig
 
 from data.helper import get_transforms
-from d_retrieval.retrieval import CXRBertForRetrieval
+from Downstream_task.Retrieval.retrieval import CXRBertForRetrieval
 from CNN_BERT.main_cnn_bert import CNN_BERT
-
 import wandb
 
 def set_seed(seed):
@@ -69,7 +68,7 @@ class CXR_Retrieval_Dataset(Dataset):
 
         self.is_train = is_train
 
-        self.tokenizer = tokenizer  # tokenizer = BertTokenizer.from_pretrained('bert-based-uncased').tokenize
+        self.tokenizer = tokenizer
 
         if args.bert_model == "albert-base-v2":
             self.albert_tokenizer = AlbertTokenizer.from_pretrained(args.bert_model)
@@ -143,12 +142,6 @@ class CXR_Retrieval_Dataset(Dataset):
             return idx, example
 
         else:
-            """
-            {"id": "s57495790", "split": "Valid", "label": "'Lung Opacity'", "is_aligned": [1], "T_label": "'Lung Opacity'", 
-            "txt": "Single portable view of the chest. Lower lung volumes seen ...", 
-            "img": "/home/mimic-cxr/dataset/image_preprocessing/re_512_3ch/Valid/s57495790.jpg"}
-            T_label is changed to T_id
-            """
             if args.MIMIC_dset:
                 study_id, split, label, is_aligned, r_id, txt, img = self.data[idx].keys()
             else:
