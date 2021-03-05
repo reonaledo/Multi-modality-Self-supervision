@@ -34,7 +34,7 @@ from transformers.tokenization_albert import AlbertTokenizer
 from transformers import BertConfig, AlbertConfig, AutoConfig
 
 from data.helper import get_transforms
-from d_retrieval.retrieval import CXRBertForRetrieval
+from Downstream_task.Retrieval.retrieval import CXRBertForRetrieval
 from CNN_BERT.main_cnn_bert import CNN_BERT
 
 import wandb
