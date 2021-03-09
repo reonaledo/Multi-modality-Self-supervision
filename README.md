@@ -64,8 +64,8 @@ $ cd Multi-modality-Self-supervision; tar -zxvf [file_name.tar.gz]
 ### Section C. Pre-training model
 Example:
 ```
-$ cd Multi-modality-Self-supervision/CNN_BERT
-$ python main_cnn_bert.py
+$ cd Multi-modality-Self-supervision
+$ python main_origin.py
 ```
 
 
@@ -74,13 +74,15 @@ $ python main_cnn_bert.py
 Disease Classification
 Example:
 ```
-askdfksdflksd
+$ cd Multi-modality-Self-supervision/Downstream_task/Classification/mmbt
+$ python main.py
 ```
 
 Image-Text Retrieval
 Example:
 ```
-askdfksdflksd
+$ cd Multi-modality-Self-supervision/Downstream_task/Retrieval
+$ python full_dset_retrieval.py
 ```
 
 Medical Visual Qestion Answering
