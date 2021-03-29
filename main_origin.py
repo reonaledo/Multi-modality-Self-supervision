@@ -105,13 +105,13 @@ if __name__ == '__main__':
     ## pre_trained_model_path, weight_load
     parser.add_argument("--weight_load", type=bool, default=False, help='pre-trained_model_mid_epoch_load')
     parser.add_argument("--pre_trained_model_path", type=str,
-                        default='/home/hg_lee/cxr-bert/clinicalbert_vlp_re35_5',
+                        default='/home/cxr-bert/clinicalbert_vlp_re35_5',
 
-                        choices=['/home/mimic-cxr/model_hglee/model_scp/pre-train/Base_sc_180,253_baseline/30',
-                                 '/home/mimic-cxr/model_hglee/model_scp/pre-train/Clinicalbert_180,253_baseline/34',
-                                 '/home/mimic-cxr/model_hglee/model_scp/pre-train/Clinicalbert_180,253_bi/20',
-                                 '/home/mimic-cxr/model_hglee/model_scp/pre-train/Clinicalbert_180,253_vlp/35',
-                                 '/home/mimic-cxr/model_hglee/model_scp/pre-train/Clinicalbert_180,253_par/35',
+                        choices=['/home/mimic-cxr/model_scp/pre-train/Base_sc_180,253_baseline/30',
+                                 '/home/mimic-cxr/model_scp/pre-train/Clinicalbert_180,253_baseline/34',
+                                 '/home/mimic-cxr/model_scp/pre-train/Clinicalbert_180,253_bi/20',
+                                 '/home/mimic-cxr/model_scp/pre-train/Clinicalbert_180,253_vlp/35',
+                                 '/home/mimic-cxr/model_scp/pre-train/Clinicalbert_180,253_par/35',
                                  ])
     parser.add_argument("--bert_model", type=str, default="bert-base-scratch",
                         choices=["albert-base-v2",
